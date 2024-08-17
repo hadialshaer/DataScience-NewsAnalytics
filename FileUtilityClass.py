@@ -55,6 +55,6 @@ class FileUtility:
         # Generate file name based on year and month
         file_name = f"articles_{year}_{month_str}.json"
         # Define the directory where files will be saved (adjust as needed)
-        directory = r"C:\Users\Voldemort\Documents\Data_articles"
+        directory = r"C:\Users\Voldemort\PycharmProjects\AlmayadeenScraping\data_articles"
         # Return the full file path
         return os.path.join(directory, file_name)
