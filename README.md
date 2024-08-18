@@ -18,9 +18,9 @@ A powerful and efficient web scraper designed to extract and analyze articles fr
 
 - [Overview](#-overview)
 - [Key Features](#-key-features)
-- [Installation Guide](#-installation)
+- [Installation Guide](#-installation-guide)
 - [Usage](#-usage)
-- [Customization](#-usage)
+- [Customization](#customization)
 - [Project Structure](#-project-structure)
 - [Results](#-results)
 - [Roadmap](#-roadmap)
