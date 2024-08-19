@@ -14,6 +14,10 @@ A powerful and efficient web scraper designed to extract and analyze articles fr
   </p>
 </div>
 
+<strong>Watch the detailed walkthrough of the AlMayadeen News Scraper:</strong>
+
+[![Presentation Video](https://img.youtube.com/vi/HgRxg2Gz0MY/maxresdefault.jpg)](https://youtu.be/HgRxg2Gz0MY)
+
 ## 📋 Table of Contents
 
 - [Overview](#-overview)
