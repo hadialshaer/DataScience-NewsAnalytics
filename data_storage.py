@@ -21,6 +21,25 @@ for filename in os.listdir(directory):
 
         # Ensure data is a list of dictionaries before inserting
         if isinstance(articles, list):
+            # Iterate through each article to fix the keywords issue
+            # Loop through each article in the list
+
+            for article in articles:
+                # Check if the 'keywords' field is present and is a string
+                if 'keywords' in article and isinstance(article['keywords'], str):
+                    # Create an empty list to store the cleaned keywords
+                    keywords_list = []
+
+                    # Split the comma-separated string into individual keywords
+                    # and remove any extra spaces around each keyword
+                    for keyword in article['keywords'].split(','):
+                        cleaned_keyword = keyword.strip()  # Remove extra spaces
+                        keywords_list.append(cleaned_keyword)  # Add the cleaned keyword to the list
+
+                    # Update the 'keywords' field with the list of cleaned keywords
+                    article['keywords'] = keywords_list
+
+
             collection.insert_many(articles)  # Insert the articles into the MongoDB collection
             print(f'Inserted data from {filename} Successfully')
         else:
