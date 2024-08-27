@@ -108,13 +108,13 @@ DgPad2024-DataScience-WebScraping/
 Our scraper has successfully extracted a wealth of information from the AlMayadeen website. Here are some visual representations of our results:
 
 *Execution process in the terminal*
-![Execution Process](Task-1/images/1.png)
+![Execution Process](Task-1/Verified_Results_Screenshots/1.png)
 
 *Total number of articles scraped*
-![Scraping Completion](Task-1/images/2.png)
+![Scraping Completion](Task-1/Verified_Results_Screenshots/2.png)
 
 *JSON files generated from the scraped data*
-![Data Output](Task-1/images/3.png)
+![Data Output](Task-1/Verified_Results_Screenshots/1.png)
 
 ## 🛣 Roadmap
 
