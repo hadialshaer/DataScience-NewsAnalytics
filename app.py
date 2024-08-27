@@ -1,3 +1,4 @@
+from datetime import datetime  # For handling dates and times
 from flask import Flask, jsonify  # For creating the Flask app and returning JSON responses
 from pymongo import MongoClient  # For connecting to MongoDB
 
@@ -720,6 +721,437 @@ def popular_keywords_last_x_days(days):
                 "keyword": "$_id",
                 "count": 1,
                 "_id": 0
+            }
+        }
+    ]
+
+    # Execute the aggregation pipeline on the collection
+    result = list(collection.aggregate(pipeline))
+
+    # Return the result as a JSON response
+    return jsonify(result)
+
+
+# 21. Route for getting articles by month and year
+@app.route('/articles_by_month/<year>/<month>', methods=['GET'])
+def articles_by_month(year, month):
+    """
+    This route handles a GET request to '/articles_by_month/<year>/<month>'. It runs an aggregation pipeline on the 'articles' collection
+    to return the number of articles published in a specific month and year.
+    """
+    # Convert year and month to integers
+    year = int(year)
+    month = int(month)
+
+    # Define the start and end dates for the month
+    start_date = datetime(year, month, 1)
+    if month == 12:
+        end_date = datetime(year + 1, 1, 1)
+    else:
+        end_date = datetime(year, month + 1, 1)
+
+    # Define the aggregation pipeline
+    pipeline = [
+        {
+            '$addFields': {
+                'published_time_date': {
+                    '$dateFromString': {
+                        'dateString': '$published_time'
+                    }
+                }
+            }
+        },
+        {
+            '$match': {
+                'published_time_date': {
+                    '$gte': start_date,
+                    '$lt': end_date
+                }
+            }
+        },
+        {
+            '$group': {
+                '_id': {
+                    'year': {
+                        '$year': '$published_time_date'
+                    },
+                    'month': {
+                        '$month': '$published_time_date'
+                    }
+                },
+                'count': {
+                    '$sum': 1
+                }
+            }
+        },
+        {
+            '$project': {
+                'year': '$_id.year',
+                'month': '$_id.month',
+                'count': 1,
+                '_id': 0
+            }
+        }
+    ]
+
+    # Execute the aggregation pipeline on the collection
+    result = list(collection.aggregate(pipeline))
+
+    # Return the result as a JSON response
+    return jsonify(result)
+
+
+# 22. Route for getting articles by word count range
+@app.route('/articles_by_word_count_range/<min>/<max>', methods=['GET'])
+def articles_by_word_count_range(min, max):
+    """
+    This route handles a GET request to '/articles_by_word_count_range/<min>/<max>'. It runs an aggregation pipeline on the 'articles' collection
+    to return a list of articles whose word count falls within the specified range.
+    """
+    # Define the aggregation pipeline
+    pipeline = [
+        # Stage 1: Convert 'word_count' from string to integer
+        {
+            "$addFields": {
+                "word_count": {"$toInt": "$word_count"}
+            }
+        },
+
+        # Stage 2: Match documents with 'word_count' within the specified range
+        {
+            "$match": {
+                "word_count": {"$gte": int(min), "$lte": int(max)}
+            }
+        },
+
+        # Stage 3: Project the results to include necessary fields (e.g., title, word_count)
+        {
+            "$project": {
+                "_id": 0,  # Exclude the original '_id' field
+                "title": 1,  # Include the title of the article
+                "url": 1,  # Include the URL of the article
+                "word_count": 1  # Include the word count of the article
+            }
+        }
+    ]
+    # Execute the aggregation pipeline on the collection
+    result = list(collection.aggregate(pipeline))
+
+    # Return the result as a JSON response
+    return jsonify(result)
+
+
+# 23. Route for getting articles with specific keyword count
+@app.route('/articles_with_specific_keyword_count/<int:count>', methods=['GET'])
+def articles_with_specific_keyword_count(count):
+    """
+    This route handles a GET request to '/articles_with_specific_keyword_count/<count>'. It runs an aggregation pipeline on the 'articles' collection
+    to return articles that contain exactly a specified number of keywords.
+    """
+    # Define the aggregation pipeline
+    pipeline = [
+        # Stage 1: Calculate the number of keywords for each document
+        {
+            "$addFields": {
+                "keyword_count": {"$size": "$keywords"}
+            }
+        },
+
+        # Stage 2: Match documents with the specified number of keywords
+        {"$match": {"keyword_count": count}},
+
+        # Stage 3: Project the results to include necessary fields (e.g., title)
+        {
+            "$project": {
+                "_id": 0,  # Exclude the original '_id' field
+                "title": 1,  # Include the title of the article
+                "url": 1  # Include the URL of the article
+            }
+        }
+    ]
+
+    # Execute the aggregation pipeline on the collection
+    result = list(collection.aggregate(pipeline))
+
+    # Return the result as a JSON response
+    return jsonify(result)
+
+
+# 24. Route for getting articles by specific date
+@app.route('/articles_by_specific_date/<date>', methods=['GET'])
+def articles_by_specific_date(date):
+    """
+    This route handles a GET request to '/articles_by_specific_date/<date>'. It runs an aggregation pipeline on the 'articles' collection
+    to return all articles published on the specified date.
+    """
+    # Convert the input date to a datetime object
+    date_obj = datetime.strptime(date, "%Y-%m-%d")
+
+    # Calculate the start and end of the day
+    start_of_day = date_obj
+    end_of_day = date_obj.replace(hour=23, minute=59, second=59, microsecond=999999)
+
+    # Query for articles published within the date range
+    result = list(collection.find({
+        "published_time": {
+            "$gte": start_of_day.isoformat(),
+            "$lt": end_of_day.isoformat()
+        }
+    }, {
+        "_id": 0,  # Exclude the _id field
+        "title": 1,
+        "url": 1,
+        "published_time": 1
+    }))
+
+    # Return the result as a JSON response
+    return jsonify(result)
+
+
+# 25. Route for getting articles containing specific text
+@app.route('/articles_containing_text/<text>', methods=['GET'])
+def articles_containing_text(text):
+    """
+    This route handles a GET request to '/articles_containing_text/<text>'. It runs an aggregation pipeline on the 'articles' collection
+    to return a list of articles that contain a specific text within their content.
+    """
+    # Define the aggregation pipeline
+    pipeline = [
+        # Stage 1: Match documents where 'content' contains the specified text
+        {"$match": {"full_text": {"$regex": text, "$options": "i"}}},
+
+        # Stage 2: Project the results to include necessary fields (e.g., title)
+        {
+            "$project": {
+                "_id": 0,  # Exclude the original '_id' field
+                "title": 1,  # Include the title of the article
+                "url": 1  # Include the URL of the article
+            }
+        }
+    ]
+
+    # Execute the aggregation pipeline on the collection
+    result = list(collection.aggregate(pipeline))
+
+    # Return the result as a JSON response
+    return jsonify(result)
+
+
+# 26. Route for getting articles with more than n words
+@app.route('/articles_with_more_than/<int:word_count>', methods=['GET'])
+def articles_with_more_than(word_count):
+    """
+    This route handles a GET request to '/articles_with_more_than/<word_count>'. It runs an aggregation pipeline on the 'articles' collection
+    to return a list of articles that have more than a specified number of words.
+    """
+    # Define the aggregation pipeline
+    # Define the aggregation pipeline
+    pipeline = [
+        # Stage 1: Convert 'word_count' from string to integer
+        {
+            "$addFields": {
+                "word_count": {"$toInt": "$word_count"}
+            }
+        },
+
+        # Stage 2: Match documents with 'word_count_int' greater than the specified value
+        {
+            "$match": {
+                "word_count": {"$gt": word_count}
+            }
+        },
+
+        # Stage 3: Project the results to include necessary fields (e.g., title, word_count)
+        {
+            "$project": {
+                "_id": 0,  # Exclude the original '_id' field
+                "title": 1,  # Include the title of the article
+                "url": 1,  # Include the URL of the article
+                "word_count": 1  # Include the original word count field
+            }
+        }
+    ]
+
+    # Execute the aggregation pipeline on the collection
+    result = list(collection.aggregate(pipeline))
+
+    # Return the result as a JSON response
+    return jsonify(result)
+
+
+# 27. Route for getting articles grouped by coverage
+@app.route('/articles_grouped_by_coverage', methods=['GET'])
+def articles_grouped_by_coverage():
+    """
+    This route handles a GET request to '/articles_grouped_by_coverage'. It runs an aggregation pipeline on the 'articles' collection
+    to return the number of articles grouped by their coverage category (from the 'classes' field).
+    """
+    # Define the aggregation pipeline
+    pipeline = [
+        # Stage 1: Unwind the 'classes' array, creating a document for each class
+        {"$unwind": "$classes"},
+
+        # Stage 2: Group by the 'classes.key' field and count the number of articles for each coverage
+        {
+            "$group": {
+                "_id": "$classes.value",
+                "count": {"$sum": 1}
+            }
+        },
+
+        # Stage 3: Project the results, renaming '_id' to 'coverage' and keeping the 'count'
+        {
+            "$project": {
+                "coverage": "$_id",
+                "count": 1,
+                "_id": 0
+            }
+        }
+    ]
+
+    # Execute the aggregation pipeline on the collection
+    result = list(collection.aggregate(pipeline))
+
+    # Return the result as a JSON response
+    return jsonify(result)
+
+
+# 28. Route for getting articles published in Last x Hours
+@app.route('/articles_last_x_hours/<int:hours>', methods=['GET'])
+def articles_last_x_hours(hours):
+    """
+    This route handles a GET request to '/articles_last_x_hours/<hours>'.
+    It returns a list of articles published in the last X hours.
+    """
+    from datetime import datetime, timedelta
+
+    # Calculate the date X hours ago
+    start_date = datetime.now() - timedelta(hours=hours)
+
+    # Define the aggregation pipeline
+    pipeline = [
+        # Stage 1: Convert 'published_time' to date and match documents within the time range
+        {
+            "$addFields": {
+                "published_time_date": {
+                    "$dateFromString": {"dateString": "$published_time"}
+                }
+            }
+        },
+        {
+            "$match": {
+                "published_time_date": {"$gte": start_date}
+            }
+        },
+
+        # Stage 2: Project the results to include necessary fields (e.g., title)
+        {
+            "$project": {
+                "_id": 0,  # Exclude the original '_id' field
+                "title": 1,  # Include the title of the article
+                "url": 1,  # Include the URL of the article
+                "published_time": 1  # Include the published time for verification
+            }
+        }
+    ]
+
+    # Execute the aggregation pipeline on the collection
+    result = list(collection.aggregate(pipeline))
+
+    # Return the result as a JSON response
+    return jsonify(result)
+
+
+# 29. Route for getting articles by title length
+@app.route('/articles_by_title_length', methods=['GET'])
+def articles_by_title_length():
+    """
+    This route handles a GET request to '/articles_by_title_length'. It runs an aggregation pipeline on the 'articles' collection
+    to return the number of articles grouped by the length of their title.
+    """
+    # Define the aggregation pipeline
+    pipeline = [
+        # Stage 1: Add a field for the length of the title
+        {
+            "$addFields": {
+                "title_length": {"$strLenCP": "$title"}
+            }
+        },
+
+        # Stage 2: Group by the 'title_length' and count the number of articles for each length
+        {
+            "$group": {
+                "_id": "$title_length",
+                "count": {"$sum": 1}
+            }
+        },
+
+        # Stage 3: Project the results, renaming '_id' to 'title_length' and keeping the 'count'
+        {
+            "$project": {
+                "title_length": "$_id",
+                "count": 1,
+                "_id": 0
+            }
+        }
+    ]
+
+    # Execute the aggregation pipeline on the collection
+    result = list(collection.aggregate(pipeline))
+
+    # Return the result as a JSON response
+    return jsonify(result)
+
+
+# 30. Route for getting most updated articles
+@app.route('/most_updated_articles', methods=['GET'])
+def most_updated_articles():
+    """
+    This route handles a GET request to '/most_updated_articles'. It runs an aggregation pipeline on the 'articles' collection
+    to find and return the top 10 articles that have been updated the most times.
+    """
+
+    """
+    The only relevant fields for tracking updates in my data are only published_time and last_updated.
+    I make an assumption based on the time difference between these two timestamps
+    Assumption: Each update happens at a fixed interval (once per hour).
+    """
+
+    # Define the aggregation pipeline
+    pipeline = [
+        # Stage 1: Add a field for the number of updates
+        {
+            "$addFields": {
+                "update_count": {
+                    "$cond": {
+                        "if": {"$ne": ["$last_updated", "$published_time"]},
+                        "then": {
+                            "$ceil": {
+                                "$divide": [
+                                    {"$subtract": [{"$toDate": "$last_updated"}, {"$toDate": "$published_time"}]},
+                                    1000 * 60 * 60  # Divide by milliseconds in an hour
+                                ]
+                            }
+                        },
+                        "else": 0
+                    }
+                }
+            }
+        },
+
+        # Stage 2: Sort by update_count in descending order
+        {"$sort": {"update_count": -1}},
+
+        # Stage 3: Limit to top 10 results
+        {"$limit": 10},
+
+        # Stage 4: Project the results, keeping only the title and update_count
+        {
+            "$project": {
+                "_id": 0,
+                "title": 1,
+                "url": 1,
+                "update_count": 1
             }
         }
     ]
