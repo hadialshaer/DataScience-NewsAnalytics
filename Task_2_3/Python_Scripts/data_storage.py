@@ -23,7 +23,6 @@ for filename in os.listdir(directory):
         if isinstance(articles, list):
             # Iterate through each article to fix the keywords issue
             # Loop through each article in the list
-
             for article in articles:
                 # Check if the 'keywords' field is present and is a string
                 if 'keywords' in article and isinstance(article['keywords'], str):

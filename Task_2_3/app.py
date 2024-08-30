@@ -10,7 +10,6 @@ client = MongoClient('mongodb://localhost:27017/')
 db = client['Almayadeen']
 collection = db['articles']
 
-
 # 1. Route for getting top keywords
 @app.route('/top_keywords', methods=['GET'])
 def top_keywords():
