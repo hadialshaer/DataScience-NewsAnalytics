@@ -1,10 +1,27 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
-<body>
+{% extends "base.html" %}
 
-</body>
-</html>
+{% block content %}
+<style>
+    /* Specific styles */
+    .container {
+        margin-top: 20px;
+    }
+
+    .form-control {
+        margin-bottom: 15px;
+    }
+</style>
+<div class="container">
+    <h2>Articles by Author</h2>
+    <form action="{{ url_for('articles_by_author') }}" method="get">
+        <div class="form-group">
+            <label for="author_name">Author Name:</label>
+            <input type="text" class="form-control" id="author_name" name="author_name" placeholder="Enter author name" required>
+        </div>
+        <button type="submit" class="btn btn-primary">Search</button>
+    </form>
+    <div id="results">
+        <!-- Results or visualizations will be rendered here -->
+    </div>
+</div>
+{% endblock %}

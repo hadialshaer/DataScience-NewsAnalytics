@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <title>Dashboard</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <link href="https://fonts.googleapis.com/css?family=Poppins:300,400,500,600,700,800,900" rel="stylesheet">
+
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="static/css/style.css">
+
+</head>
+<body>
+
+<div class="wrapper d-flex align-items-stretch">
+    <nav id="sidebar">
+        <div class="custom-menu">
+            <button type="button" id="sidebarCollapse" class="btn btn-primary">
+            </button>
+        </div>
+        <div class="img bg-wrap text-center py-4" style="background-color: #32373D;">
+            <div class="user-logo img">
+                <div class="img" style="background-image: url(static/images/al_mayadeen.png);"></div>
+                <a href="/">
+                    <h3 class="styled-text">
+                        Almayadeen<br>Scraper
+                    </h3>
+                </a>
+            </div>
+        </div>
+        <ul class="list-unstyled components mb-5">
+            <li>
+                <a href="{{ url_for('top_keywords') }}">Top Keywords</a>
+            </li>
+
+            <li>
+                <a href="{{ url_for('top_authors') }}">Top Authors</a>
+            </li>
+
+            <li>
+                <a href="{{ url_for('articles_by_date') }}">Articles by Date</a>
+            </li>
+
+            <li>
+                <a href="{{ url_for('articles_by_word_count') }}">Articles by Word Count</a>
+            </li>
+
+            <li>
+                <a href="{{ url_for('articles_by_language') }}">Articles by Language</a>
+            </li>
+
+            <li>
+                <a href="{{ url_for('articles_by_classes') }}">Articles by Category</a>
+            </li>
+
+            <li>
+                <a href="{{ url_for('recent_articles') }}">Recent Articles</a>
+            </li>
+
+            <li>
+                <a href="{{ url_for('articles_by_keyword') }}">Articles by Keyword</a>
+            </li>
+
+            <li>
+                <a href="{{ url_for('articles_by_author') }}">Articles by Author</a>
+            </li>
+
+            <li>
+                <a href="{{ url_for('top_classes') }}">Top Classes</a>
+            </li>
+
+            <li>
+                <a href="{{ url_for('article_details') }}">Article Details</a>
+            </li>
+
+            <li>
+                <a href="{{ url_for('articles_with_video') }}">Articles Containing Video</a>
+            </li>
+
+        </ul>
+
+    </nav>
+
+    <!-- Page Content  -->
+    <div id="content" class="p-4 p-md-5 pt-5">
+        {% block content %}{% endblock %}
+    </div>
+</div>
+
+<script src="static/js/jquery.min.js"></script>
+<script src="static/js/popper.js"></script>
+<script src="static/js/bootstrap.min.js"></script>
+<script src="static/js/main.js"></script>
+</body>
+</html>
