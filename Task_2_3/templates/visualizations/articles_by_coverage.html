@@ -1,10 +1,155 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
-<body>
+{% extends "base.html" %}
 
-</body>
-</html>
+{% block content %}
+<div class="container">
+    <h2>Articles by Coverage</h2>
+    <form action="{{ url_for('articles_by_coverage') }}" method="get" id="coverageForm">
+        <div class="form-group">
+            <label for="coverage">Coverage:</label>
+            <div style="display: flex; align-items: center;">
+                <input type="text" class="form-control" id="coverage" name="coverage" placeholder="Enter coverage" required>
+                <!-- Message for total articles with coverage next to the input -->
+                <div id="totalArticlesMessage" class="alert alert-info" style="margin-left: 20px; white-space: nowrap; display: none;"></div>
+            </div>
+        </div>
+        <button type="submit" class="btn btn-primary" style="margin-top: 0;">Search</button>
+        <!-- Message for limit displayed directly under the search button -->
+        <div id="message" class="alert alert-info" style="margin-top: 10px; width: 100%; display: none;"></div>
+    </form>
+</div>
+
+<div id="chartdiv" style="width: 100%; height: 550px; margin-top: 20px;"></div>
+
+<!-- Styles -->
+<style>
+    #chartdiv {
+      width: 100%;
+      max-width: 100%;
+      height: 550px;
+    }
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      margin-bottom: 0; /* Remove extra margin */
+    }
+    .form-group input, .form-group button {
+      margin-bottom: 5px; /* Ensure minimal margin between elements */
+    }
+    .alert {
+      margin-top: 5px;
+    }
+</style>
+
+<!-- Resources -->
+<script src="https://cdn.amcharts.com/lib/5/index.js"></script>
+<script src="https://cdn.amcharts.com/lib/5/hierarchy.js"></script>
+<script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
+
+<!-- Chart code -->
+<script>
+let chartRoot = null; // Store chart root globally
+
+document.getElementById('coverageForm').addEventListener('submit', function(event) {
+    event.preventDefault();
+    var coverage = document.getElementById('coverage').value;
+
+    // Display a loading indicator
+    document.getElementById('chartdiv').innerHTML = '<p>Loading...</p>';
+    document.getElementById('message').style.display = 'none'; // Hide limit message at start
+    document.getElementById('totalArticlesMessage').style.display = 'none'; // Hide total message
+
+    // Fetch data from Flask backend using the coverage value
+    fetch(`/articles_by_coverage?coverage=${coverage}&format=json`)
+    .then(response => response.json())
+    .then(data => {
+        let articlesToShow = data;
+
+        // Check if number of articles is more than 200
+        if (data.length > 200) {
+            articlesToShow = data.slice(0, 200); // Limit to 200 articles
+            document.getElementById('message').textContent = `Due to the high number of articles with "${coverage}", only 200 are shown.`;
+            document.getElementById('message').style.display = 'block'; // Show the message
+        }
+
+        // Display the total number of articles with coverage
+        document.getElementById('totalArticlesMessage').textContent = `Total number of articles with coverage "${coverage}" is ${data.length}.`;
+        document.getElementById('totalArticlesMessage').style.display = 'block'; // Show the message
+
+        createChart(coverage, articlesToShow, data.length);
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        document.getElementById('chartdiv').innerHTML = '<p>Error loading data. Please try again.</p>';
+    });
+});
+
+function createChart(coverage, articles, totalArticles) {
+    // Dispose of the old chart if it exists
+    if (chartRoot) {
+        chartRoot.dispose();
+    }
+
+    am5.ready(function() {
+        // Clear loading indicator
+        document.getElementById('chartdiv').innerHTML = '';
+
+        // Create root element
+        chartRoot = am5.Root.new("chartdiv");
+
+        // Set themes
+        chartRoot.setThemes([am5themes_Animated.new(chartRoot)]);
+
+        // Create chart container
+        var container = chartRoot.container.children.push(am5.Container.new(chartRoot, {
+            width: am5.percent(100),
+            height: am5.percent(100),
+            layout: chartRoot.verticalLayout
+        }));
+
+        // Create the force-directed tree series
+        var series = container.children.push(am5hierarchy.ForceDirected.new(chartRoot, {
+            singleBranchOnly: true,
+            valueField: "value",
+            categoryField: "name",
+            childDataField: "children",
+            idField: "name",
+            manyBodyStrength: -10,
+            centerStrength: 0.3,
+            initialDepth: 1,
+        }));
+
+        // Prepare data: one big bubble (coverage) with many small bubbles (articles)
+        var chartData = {
+            name: coverage,
+            value: articles.length,
+            children: articles.map(article => ({
+                name: article.title, // Only showing the title in the bubble
+                value: 1
+            }))
+        };
+
+        // Set the data
+        series.data.setAll([chartData]);
+
+        // Style the small bubbles (for articles)
+        series.nodes.template.setAll({
+            radius: 10, // Set small radius for the article bubbles
+            tooltipText: "{name}", // Show the article title on hover
+        });
+
+        // Style the large bubble (for coverage)
+        series.nodes.template.adapters.add("radius", function(radius, target) {
+            if (target.dataItem.dataContext.name === coverage) {
+                return 50; // Make the coverage bubble large
+            }
+            return radius;
+        });
+
+        // Make stuff animate on load
+        series.appear(1000, 100);
+    });
+}
+
+</script>
+
+{% endblock %}

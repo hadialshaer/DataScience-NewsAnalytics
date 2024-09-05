@@ -1,10 +1,68 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
-<body>
+{% extends "base.html" %}
 
-</body>
-</html>
+{% block content %}
+
+<h2>Articles by Word Count</h2>
+
+<title>Articles by Word Count</title>
+<script src="//www.amcharts.com/lib/3/amcharts.js"></script>
+<script src="//www.amcharts.com/lib/3/serial.js"></script>
+<script src="//www.amcharts.com/lib/3/themes/light.js"></script>
+<style>
+    #chartdiv {
+        width: 100%;
+        height: 570px;
+    }
+</style>
+
+<script>
+    // Function to fetch data from API
+    function fetchChartData() {
+        return fetch('http://127.0.0.1:5000/articles_by_word_count?format=json')
+            .then(response => response.json())
+            .then(data => {
+                return data.map(item => ({
+                    category: item.word_count,
+                    count: item.count
+                }));
+            });
+    }
+
+    // Function to create chart
+    function createChart(chartData) {
+        var chart = AmCharts.makeChart("chartdiv", {
+            "type": "serial",
+            "theme": "light",
+            "columnWidth": 0.5, // Adjust this value
+            "dataProvider": chartData,
+            "graphs": [{
+                "fillColors": "#c55",
+                "fillAlphas": 0.9,
+                "lineColor": "#fff",
+                "lineAlpha": 0.7,
+                "type": "column",
+                "valueField": "count"
+            }],
+            "categoryField": "category",
+            "categoryAxis": {
+                "startOnAxis": true,
+                "title": "Word Count",
+                "labelRotation": 45, // Rotate labels if too many categories
+                "gridPosition": "start"
+            },
+            "valueAxes": [{
+                "title": "Count"
+            }],
+            "chartScrollbar": {
+                "enabled": true // Add scrollbar if too many categories
+            }
+        });
+    }
+
+    // Fetch data and create chart
+    fetchChartData().then(createChart);
+</script>
+
+<div id="chartdiv"></div>
+
+{% endblock %}

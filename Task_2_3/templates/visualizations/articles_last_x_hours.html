@@ -1,10 +1,25 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
-<body>
+{% extends "base.html" %}
 
-</body>
-</html>
+{% block content %}
+
+
+<div class="container">
+    <h2>Articles Published in Last X Hours</h2>
+    <form action="{{ url_for('articles_last_x_hours') }}" method="get">
+        <div class="form-group">
+            <label for="hours">Hours:</label>
+            <input type="number" class="form-control" id="hours" name="hours" placeholder="Enter number of hours" required>
+            <button type="submit" class="btn btn-primary">Search</button>
+        </div>
+
+    </form>
+    <div id="results">
+        <!-- Results or visualizations will be rendered here -->
+        {% if data %}
+
+        {% else %}
+            <p>No articles found.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,10 +1,146 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
-<body>
+{% extends "base.html" %}
 
-</body>
-</html>
+{% block content %}
+
+<h2>Recent Articles</h2>
+
+<!-- Styles -->
+<style>
+#chartdiv {
+  width: 100%;
+  height: 500px;
+}
+</style>
+
+<!-- Resources -->
+<script src="https://cdn.amcharts.com/lib/5/index.js"></script>
+<script src="https://cdn.amcharts.com/lib/5/xy.js"></script>
+<script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
+
+<!-- Chart code -->
+<script>
+am5.ready(function() {
+
+  // Create root element
+  var root = am5.Root.new("chartdiv");
+
+  // Set themes
+  root.setThemes([
+    am5themes_Animated.new(root)
+  ]);
+
+  // Create chart
+  var chart = root.container.children.push(am5xy.XYChart.new(root, {
+    panX: true,
+    panY: true,
+    wheelX: "panX",
+    wheelY: "zoomX",
+    pinchZoomX: true,
+    paddingLeft: 0,
+    paddingRight: 1
+  }));
+
+  // Add cursor
+  var cursor = chart.set("cursor", am5xy.XYCursor.new(root, {}));
+  cursor.lineY.set("visible", false);
+
+  // Create axes
+  var xRenderer = am5xy.AxisRendererX.new(root, {
+    minGridDistance: 30,
+    minorGridEnabled: true
+  });
+
+  xRenderer.labels.template.setAll({
+    rotation: -90,
+    centerY: am5.p50,
+    centerX: am5.p100,
+    paddingRight: 15
+  });
+
+  xRenderer.grid.template.setAll({
+    location: 1
+  });
+
+  var xAxis = chart.xAxes.push(am5xy.CategoryAxis.new(root, {
+    maxDeviation: 0.3,
+    categoryField: "published_date",
+    renderer: xRenderer,
+    tooltip: am5.Tooltip.new(root, {})
+  }));
+
+  var yRenderer = am5xy.AxisRendererY.new(root, {
+    strokeOpacity: 0.1
+  });
+
+  var yAxis = chart.yAxes.push(am5xy.ValueAxis.new(root, {
+    maxDeviation: 0.3,
+    renderer: yRenderer
+  }));
+
+  // Create series
+  var series = chart.series.push(am5xy.ColumnSeries.new(root, {
+    name: "Articles",
+    xAxis: xAxis,
+    yAxis: yAxis,
+    valueYField: "article_count",
+    sequencedInterpolation: true,
+    categoryXField: "published_date",
+    tooltip: am5.Tooltip.new(root, {
+      labelText: "{title}\n{published_time}"
+    })
+  }));
+
+  series.columns.template.setAll({
+    cornerRadiusTL: 5,
+    cornerRadiusTR: 5,
+    strokeOpacity: 0
+  });
+
+  series.columns.template.adapters.add("fill", function (fill, target) {
+    return chart.get("colors").getIndex(series.columns.indexOf(target));
+  });
+
+  series.columns.template.adapters.add("stroke", function (stroke, target) {
+    return chart.get("colors").getIndex(series.columns.indexOf(target));
+  });
+
+  // Fetch data from the Flask endpoint
+  fetch('http://127.0.0.1:5000/recent_articles?format=json')
+    .then(response => response.json())
+    .then(data => {
+      // Group articles by date and count articles per date
+      let groupedData = {};
+      data.forEach(item => {
+        let date = item.published_time.split("T")[0]; // Extract date only
+        if (!groupedData[date]) {
+          groupedData[date] = { published_date: date, article_count: 0, titles: [] };
+        }
+        groupedData[date].article_count += 1;
+        groupedData[date].titles.push(item.title + " (" + new Date(item.published_time).toLocaleTimeString() + ")");
+      });
+
+      // Prepare data for the chart
+      let chartData = Object.values(groupedData).map(group => ({
+        published_date: group.published_date,
+        article_count: group.article_count,
+        title: group.titles.join("\n"),
+        published_time: group.published_date
+      }));
+
+      // Set data to chart
+      xAxis.data.setAll(chartData);
+      series.data.setAll(chartData);
+
+      // Make stuff animate on load
+      series.appear(1000);
+      chart.appear(1000, 100);
+    })
+    .catch(error => console.error('Error fetching data:', error));
+
+}); // end am5.ready()
+</script>
+
+<!-- HTML -->
+<div id="chartdiv"></div>
+
+{% endblock %}

@@ -1,10 +1,140 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
-<body>
+{% extends "base.html" %}
 
-</body>
-</html>
+{% block content %}
+
+<h2>Articles Updated After Publication</h2>
+
+<!-- Styles -->
+<style>
+  #chartdiv {
+    width: 100%;
+    height: 500px;
+  }
+  #totalArticles {
+    font-size: 18px;
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 10px;
+  }
+</style>
+
+<!-- Resources -->
+<script src="https://cdn.amcharts.com/lib/5/index.js"></script>
+<script src="https://cdn.amcharts.com/lib/5/xy.js"></script>
+<script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
+
+<!-- Chart code -->
+<script>
+am5.ready(function() {
+
+    // Create root element
+    var root = am5.Root.new("chartdiv");
+
+    // Set themes
+    root.setThemes([
+        am5themes_Animated.new(root)
+    ]);
+
+    // Create chart
+    var chart = root.container.children.push(am5xy.XYChart.new(root, {
+        panX: true,
+        panY: false,
+        wheelX: "panX",
+        wheelY: "zoomX",
+        paddingLeft: 0,
+        layout: root.verticalLayout
+    }));
+
+    // Fetch data from the Flask API
+    fetch("http://127.0.0.1:5000/articles_updated_after_publication?format=json")
+        .then(response => response.json())
+        .then(data => {
+            // Total number of articles
+            var totalArticles = data.length;
+            document.getElementById('totalArticles').innerText = `Total Articles: ${totalArticles}`;
+
+            // Process the data: Calculate the time difference between `published_time` and `last_updated`
+            var chartData = data.map(item => {
+                const publishedTime = new Date(item.published_time);
+                const lastUpdatedTime = new Date(item.last_updated);
+                const updateDuration = (lastUpdatedTime - publishedTime) / (1000 * 60);  // Time difference in minutes
+
+                return {
+                    url: item.url,
+                    title: item.title,
+                    updateDuration: updateDuration > 0 ? updateDuration : 0
+                };
+            });
+
+            // Create X-axis (Category Axis)
+            var xRenderer = am5xy.AxisRendererX.new(root, { minGridDistance: 50 });
+            var xAxis = chart.xAxes.push(am5xy.CategoryAxis.new(root, {
+                categoryField: "title",
+                renderer: xRenderer,
+                tooltip: am5.Tooltip.new(root, { labelText: "{title}" })
+            }));
+
+            xAxis.data.setAll(chartData);
+
+            // Hide labels on X-axis to prevent overcrowding
+            xAxis.get("renderer").labels.template.set("visible", false);
+
+            // Create Y-axis (Value Axis)
+            var yAxis = chart.yAxes.push(am5xy.ValueAxis.new(root, {
+                min: 0,
+                renderer: am5xy.AxisRendererY.new(root, { visible: false })
+            }));
+
+            // Create series
+            var series = chart.series.push(am5xy.ColumnSeries.new(root, {
+                name: "Update Duration",
+                xAxis: xAxis,
+                yAxis: yAxis,
+                valueYField: "updateDuration",
+                categoryXField: "title",
+                tooltip: am5.Tooltip.new(root, {
+                    labelText: "[bold]{title}[/]\nUpdated {valueY} minutes after publication"  // Tooltip with title and update time
+                })
+            }));
+
+            // Add data
+            series.data.setAll(chartData);
+
+            // Customize column appearance
+            series.columns.template.setAll({
+                cornerRadiusTL: 5,
+                cornerRadiusTR: 5,
+                fillOpacity: 0.8,
+                tooltipText: "[bold]{title}[/]\nUpdated {valueY} minutes after publication",
+                clickable: true
+            });
+
+            // Adding click event to open article URL
+            series.columns.template.events.on("click", function(ev) {
+                window.open(ev.target.dataItem.dataContext.url, "_blank");
+            });
+
+            series.columns.template.adapters.add("fill", function(fill, target) {
+                return chart.get("colors").getIndex(series.columns.indexOf(target));
+            });
+
+            // Initial zoom to show fewer articles at first
+            chart.events.once("datavalidated", function() {
+                xAxis.zoomToIndexes(0, 10); // Adjust this number to show how many articles are visible at the start
+            });
+
+            // Add scrollbars for horizontal scrolling
+            chart.set("scrollbarX", am5.Scrollbar.new(root, { orientation: "horizontal" }));
+        });
+
+    // Make chart animate on load
+    chart.appear(1000, 100);
+
+}); // end am5.ready()
+</script>
+
+<!-- HTML -->
+<div id="totalArticles"></div>
+<div id="chartdiv"></div>
+
+{% endblock %}

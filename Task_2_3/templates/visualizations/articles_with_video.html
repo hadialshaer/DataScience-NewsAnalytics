@@ -1,10 +1,72 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
-<body>
+{% extends "base.html" %}
 
-</body>
-</html>
+{% block content %}
+
+
+<div id="chartdiv" style="width: 100%; height: 500px;"></div>
+
+<!-- Include amCharts libraries -->
+<script src="https://cdn.amcharts.com/lib/4/core.js"></script>
+<script src="https://cdn.amcharts.com/lib/4/charts.js"></script>
+<script src="https://cdn.amcharts.com/lib/4/themes/animated.js"></script>
+
+<!-- Chart code -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        fetch('http://127.0.0.1:5000/articles_with_video?format=json')
+            .then(response => response.json())
+            .then(data => {
+                // Count the total number of articles
+                let totalArticles = data.length;
+
+                // Create chart data
+                let chartData = [
+                    { "category": "Total Articles", "count": totalArticles }
+                ];
+
+                // Create amCharts bar chart
+                am4core.useTheme(am4themes_animated);
+                let chart = am4core.create("chartdiv", am4charts.XYChart);
+                chart.data = chartData;
+
+                // Create category axis
+                let categoryAxis = chart.xAxes.push(new am4charts.CategoryAxis());
+                categoryAxis.dataFields.category = "category";
+                categoryAxis.title.text = "Articles";
+                categoryAxis.renderer.labels.template.wrap = true;
+
+                // Create value axis
+                let valueAxis = chart.yAxes.push(new am4charts.ValueAxis());
+                valueAxis.title.text = "Number of Articles";
+
+                // Create series
+                let series = chart.series.push(new am4charts.ColumnSeries());
+                series.dataFields.valueY = "count";
+                series.dataFields.categoryX = "category";
+                series.name = "Articles";
+                series.columns.template.tooltipText = "{categoryX}: [bold]{valueY}[/]";
+
+                // Adding a chart title
+                let title = chart.titles.create();
+                title.text = "Total Number of Articles with Videos";
+                title.fontSize = 25;
+                title.marginBottom = 30;
+
+                // Handle click event on the bar
+                series.columns.template.events.on("hit", function(ev) {
+                    let listWindow = window.open('', '_blank');
+                    listWindow.document.write('<html><head><title>Articles</title></head><body>');
+                    listWindow.document.write('<h2>Articles with Videos</h2><ul>');
+                    data.forEach(article => {
+                        listWindow.document.write(`<li><a href="${article.url}" target="_blank">${article.title}</a></li>`);
+                    });
+                    listWindow.document.write('</ul></body></html>');
+                    listWindow.document.close();
+                });
+            })
+            .catch(error => console.error('Error fetching data:', error));
+    });
+
+</script>
+
+{% endblock %}

@@ -1,10 +1,136 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
-<body>
+{% extends "base.html" %}
 
-</body>
-</html>
+{% block content %}
+<div class="container">
+    <h2>Most Popular Keywords in the Last X Days</h2>
+    <form action="{{ url_for('popular_keywords_last_x_days') }}" method="get" id="keywordsForm">
+        <div class="form-group col-md-6">
+            <label for="days">Days:</label>
+            <input type="number" class="form-control" id="days" name="days" placeholder="Enter number of days" required>
+            <button type="submit" class="btn btn-primary" style="margin-top: 10px;">Search</button>
+        </div>
+    </form>
+</div>
+
+    <div id="chartdiv" style="width: 100%; height: 500px;"></div>
+
+    <!-- Styles -->
+    <style>
+        #chartdiv {
+            width: 100%;
+            height: 500px;
+            margin-top: 20px;
+        }
+    </style>
+
+    <!-- amCharts Resources -->
+    <script src="https://cdn.amcharts.com/lib/5/index.js"></script>
+    <script src="https://cdn.amcharts.com/lib/5/xy.js"></script>
+    <script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
+    <script src="https://cdn.amcharts.com/lib/5/themes/Responsive.js"></script>
+
+    <!-- Chart Code -->
+    <script>
+        let chartRoot = null; // Store the chart root globally
+
+        document.getElementById('keywordsForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            var days = document.getElementById('days').value;
+
+            // Update the URL without reloading the page
+            if (window.history.pushState) {
+                const newUrl = `/popular_keywords_last_x_days?days=${days}`;
+                window.history.pushState({ path: newUrl }, '', newUrl);
+            }
+
+            // Display loading message
+            document.getElementById('chartdiv').innerHTML = '<p>Loading...</p>';
+
+            // Fetch data from the Flask backend
+            fetch(`/popular_keywords_last_x_days?days=${days}&format=json`)
+                .then(response => response.json())
+                .then(data => {
+                    // Clear the loading message before rendering the chart
+                    document.getElementById('chartdiv').innerHTML = '';
+                    createChart(data); // Pass the data to create the chart
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    document.getElementById('chartdiv').innerHTML = '<p>Error loading data. Please try again.</p>';
+                });
+        });
+
+        function createChart(data) {
+            // Dispose of the old chart if it exists
+            if (chartRoot !== null) {
+                chartRoot.dispose();
+            }
+
+            // Create new root element for chart
+            chartRoot = am5.Root.new("chartdiv");
+
+            // Set themes
+            chartRoot.setThemes([am5themes_Animated.new(chartRoot), am5themes_Responsive.new(chartRoot)]);
+
+            // Create chart
+            let chart = chartRoot.container.children.push(am5xy.XYChart.new(chartRoot, {
+                panX: true,
+                panY: true,
+                wheelX: "panX",
+                wheelY: "zoomX",
+                pinchZoomX: true
+            }));
+
+            // Add cursor
+            let cursor = chart.set("cursor", am5xy.XYCursor.new(chartRoot, {}));
+            cursor.lineY.set("visible", false);
+
+            // Create axes
+            let xAxis = chart.xAxes.push(am5xy.CategoryAxis.new(chartRoot, {
+                categoryField: "keyword",
+                renderer: am5xy.AxisRendererX.new(chartRoot, {}),
+                tooltip: am5.Tooltip.new(chartRoot, {})
+            }));
+
+            let yAxis = chart.yAxes.push(am5xy.ValueAxis.new(chartRoot, {
+                renderer: am5xy.AxisRendererY.new(chartRoot, {})
+            }));
+
+            // Add series
+            let series = chart.series.push(am5xy.LineSeries.new(chartRoot, {
+                name: "Count",
+                xAxis: xAxis,
+                yAxis: yAxis,
+                valueYField: "count",
+                categoryXField: "keyword",
+                tooltip: am5.Tooltip.new(chartRoot, {
+                    labelText: "{name}: {valueY}"
+                })
+            }));
+
+            // Add bullets to make the points visible
+            series.bullets.push(function() {
+                return am5.Bullet.new(chartRoot, {
+                    sprite: am5.Circle.new(chartRoot, {
+                        radius: 5,
+                        fill: series.get("fill")
+                    })
+                });
+            });
+
+            // Set data
+            series.data.setAll(data);
+            xAxis.data.setAll(data);
+
+            // Add scrollbar
+            chart.set("scrollbarX", am5.Scrollbar.new(chartRoot, {
+                orientation: "horizontal"
+            }));
+
+            // Make chart appear
+            series.appear(1000);
+            chart.appear(1000, 100);
+        }
+    </script>
+
+    {% endblock %}

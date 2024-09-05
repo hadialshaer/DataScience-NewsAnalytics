@@ -1,4 +1,5 @@
 from datetime import datetime  # For handling dates and times
+
 from flask import Flask, jsonify, render_template, request  # For creating the Flask app and returning JSON responses
 from pymongo import MongoClient  # For connecting to MongoDB
 from flask_cors import CORS # For enabling Cross-Origin Resource Sharing (CORS)
@@ -11,7 +12,6 @@ CORS(app) # Enable CORS for the app
 client = MongoClient('mongodb://localhost:27017/')
 db = client['Almayadeen']
 collection = db['articles']
-
 
 # Define the routes for the dashboard and the API endpoints
 @app.route('/')
@@ -261,15 +261,22 @@ def articles_by_classes():
         # Stage 1: Unwind the 'classes' array, creating a document for each class
         {"$unwind": "$classes"},
 
-        # Stage 2: Group by the 'classes.key' field and count the number of articles in each class
+        # Stage 2: Match only documents where the 'mapping' field is 'category'
         {
-            "$group": {
-                "_id": "$classes.key",  # Group by the class key
-                "count": {"$sum": 1}  # Count the number of articles for each class
+            "$match": {
+                "classes.mapping": "category"  # Ensure we match only the 'category' mapping
             }
         },
 
-        # Stage 3: Project the results, renaming '_id' to 'class' and keeping the 'count'
+        # Stage 3: Group by the 'classes.value' field and count the number of articles in each class
+        {
+            "$group": {
+                "_id": "$classes.value",  # Group by the 'value' of the class with mapping 'category'
+                "count": {"$sum": 1}  # Count the number of articles for each class value
+            }
+        },
+
+        # Stage 4: Project the results, renaming '_id' to 'class' and keeping the 'count'
         {
             "$project": {
                 "_id": 0,  # Exclude the original '_id' field
@@ -337,6 +344,14 @@ def articles_by_keyword():
     """
     # Get the keyword from the query parameters
     keyword = request.args.get('keyword')
+    if keyword is None:
+        return render_template('visualizations/articles_by_keyword.html', data = [])
+    try:
+        # Check if the keyword is a valid string
+        keyword = str(keyword)
+    except ValueError:
+        # Return an error message if the keyword is not a valid string
+        return jsonify({"error": "Invalid keyword. Please provide a valid string."})
 
     if keyword:
         # Define the aggregation pipeline
@@ -358,9 +373,9 @@ def articles_by_keyword():
         if request.args.get('format') == 'json':
             # Return the result as a JSON response
             return jsonify(result)
-        # Pass the result to the template
-        return render_template('visualizations/articles_by_keyword.html', data=result)
-    return render_template('visualizations/articles_by_keyword.html')
+        else:
+            # Pass the result to the template
+            return render_template('visualizations/articles_by_keyword.html', data=result)
 
 # 9. Route for getting articles by author
 @app.route('/articles_by_author', methods=['GET'])
@@ -370,6 +385,15 @@ def articles_by_author():
     to find and return all articles written by the specified author.
     """
     author_name = request.args.get('author_name')
+
+    if author_name is None:
+        return render_template('visualizations/articles_by_author.html', data = [])
+    try:
+        # Check if the author_name is a valid string
+        author_name = str(author_name)
+    except ValueError:
+        # Return an error message if the author_name is not a valid string
+        return jsonify({"error": "Invalid author name. Please provide a valid string."})
 
     if author_name:
         # Define the aggregation pipeline
@@ -390,9 +414,9 @@ def articles_by_author():
         if request.args.get('format') == 'json':
             # Return the result as a JSON response
             return jsonify(result)
-        # Pass the result to the template
-        return render_template('visualizations/articles_by_author.html', data=result)
-    return render_template('visualizations/articles_by_author.html')
+        else:
+            # Pass the result to the template
+            return render_template('visualizations/articles_by_author.html', data=result)
 
 # 10. Route for getting articles by class
 @app.route('/top_classes', methods=['GET'])
@@ -406,30 +430,40 @@ def top_classes():
         # Stage 1: Unwind the 'classes' array, creating a document for each class
         {"$unwind": "$classes"},
 
-        # Stage 2: Group by the 'classes.key' field and count the number of articles for each class
+        # Stage 2: Match only documents where the 'mapping' field is 'category'
         {
-            "$group": {
-                "_id": "$classes.key",
-                "count": {"$sum": 1}
+            "$match": {
+                "classes.mapping": "category"
             }
         },
 
-        # Stage 3: Sort the groups by count in descending order
-        {"$sort": {"count": -1}},
+        # Stage 3: Group by the 'classes.value' (category) field and count the number of articles in each category
+        {
+            "$group": {
+                "_id": "$classes.value",  # Group by the category value
+                "count": {"$sum": 1}  # Count the number of articles for each category
+            }
+        },
 
-        # Stage 4: Limit the result to the top 10 classes
-        {"$limit": 10},
+        # Stage 4: Sort by 'count' in descending order to get the most frequent classes
+        {
+            "$sort": {"count": -1}  # Sort by count in descending order
+        },
 
-        # Stage 5: Project the results, renaming '_id' to 'class' and keeping the 'count'
+        # Stage 5: Limit the result to the top 10 classes
+        {
+            "$limit": 10
+        },
+
+        # Stage 6: Project the results, renaming '_id' to 'category' and keeping the 'count'
         {
             "$project": {
-                "class": "$_id",
-                "count": 1,
-                "_id": 0
+                "_id": 0,  # Exclude the original '_id' field
+                "category": "$_id",  # Rename '_id' to 'category'
+                "count": 1  # Include the 'count' field
             }
         }
     ]
-
     # Execute the aggregation pipeline on the collection
     result = list(collection.aggregate(pipeline))
     # Check if the request is for JSON or HTML
@@ -449,6 +483,9 @@ def article_details():
     based on its postid.
     """
     postid = request.args.get('postid')
+
+    if postid is None:
+        return render_template('visualizations/article_details.html', data = [])
 
     if postid:
         # Define the aggregation pipeline
@@ -477,10 +514,9 @@ def article_details():
         if request.args.get('format') == 'json':
             # Return the result as a JSON response
             return jsonify(result)
-        # Pass the result to the template
-        return render_template('visualizations/article_details.html', data=result)
-    return render_template('visualizations/article_details.html')
-
+        else:
+            # Pass the result to the template
+            return render_template('visualizations/article_details.html', data=result)
 
 # 12. Route for getting articles with video
 @app.route('/articles_with_video', methods=['GET'])
@@ -524,6 +560,14 @@ def articles_by_year():
     to return the number of articles published in the specified year.
     """
     year = request.args.get('year')
+    if year is None:
+        return render_template('visualizations/articles_by_year.html', data = [])
+    try:
+        # Check if the year is a valid integer
+        year = int(year)
+    except ValueError:
+        # Return an error message if the year is not a valid integer
+        return jsonify({"error": "Invalid year. Please provide a valid integer."})
 
     if year:
         # Define the aggregation pipeline
@@ -562,20 +606,21 @@ def longest_articles():
     """
     # Define the aggregation pipeline
     pipeline = [
-        # Stage 1: Sort the articles by 'word_count' in descending order
-        {"$sort": {"word_count": -1}},
-
-        # Stage 2: Limit the result to the top 10 articles
-        {"$limit": 10},
-
-        # Stage 3: Project the results to include necessary fields (e.g., title, word_count)
+        # Stage 1: Convert 'word_count' from string to integer for accurate sorting
         {
             "$project": {
                 "_id": 0,  # Exclude the original '_id' field
                 "title": 1,  # Include the title of the article
-                "word_count": 1  # Include the word count of the article
+                "word_count": {"$toInt": "$word_count"}  # Convert 'word_count' to integer
             }
-        }
+        },
+
+        # Stage 2: Sort the articles by 'word_count' in descending order
+        {"$sort": {"word_count": -1}},
+
+        # Stage 3: Limit the result to the top 10 articles
+        {"$limit": 10},
+
     ]
 
     # Execute the aggregation pipeline on the collection
@@ -598,20 +643,21 @@ def shortest_articles():
     """
     # Define the aggregation pipeline
     pipeline = [
-        # Stage 1: Sort the articles by 'word_count' in ascending order
-        {"$sort": {"word_count": 1}},
-
-        # Stage 2: Limit the result to the top 10 articles
-        {"$limit": 10},
-
-        # Stage 3: Project the results to include necessary fields (e.g., title, word_count)
+        # Stage 1: Convert 'word_count' from string to integer for accurate sorting
         {
             "$project": {
                 "_id": 0,  # Exclude the original '_id' field
                 "title": 1,  # Include the title of the article
-                "word_count": 1  # Include the word count of the article
+                "word_count": {"$toInt": "$word_count"}  # Convert 'word_count' to integer
             }
-        }
+        },
+
+        # Stage 2: Sort the articles by 'word_count' in increasing order
+        {"$sort": {"word_count": 1}},
+
+        # Stage 3: Limit the result to the top 10 articles
+        {"$limit": 10},
+
     ]
 
     # Execute the aggregation pipeline on the collection
@@ -648,12 +694,14 @@ def articles_by_keyword_count():
                 "count": {"$sum": 1}
             }
         },
+        {
+          "$sort": {"count": 1, "keyword_count": 1}
+        },
 
         # Stage 3: Project the results, renaming '_id' to 'keyword_count' and keeping the 'count'
         {
             "$project": {
                 "keyword_count": "$_id",
-                "keyword.key"
                 "count": 1,
                 "_id": 0
             }
@@ -668,7 +716,7 @@ def articles_by_keyword_count():
         return jsonify(result)
     else:
         # Render the result in an HTML template
-        return render_template('visualizations/longest_articles.html', data=result)
+        return render_template('visualizations/articles_by_keyword_count.html', data=result)
 
 
 # 17. Route for getting articles with thumbnail presence
@@ -748,6 +796,14 @@ def articles_by_coverage():
     to find and return all articles under a specific coverage category from the 'classes' field.
     """
     coverage = request.args.get('coverage')
+    if coverage is None:
+        return render_template('visualizations/articles_by_coverage.html', data = [])
+    try:
+        # Check if the coverage is a valid string
+        coverage = str(coverage)
+    except ValueError:
+        # Return an error message if the coverage is not a valid string
+        return jsonify({"error": "Invalid coverage. Please provide a valid string."})
     if coverage:
         # Define the aggregation pipeline
         pipeline = [
@@ -772,8 +828,6 @@ def articles_by_coverage():
             return jsonify(result)
         # Pass the result to the template
         return render_template('visualizations/articles_by_coverage.html', data=result)
-    return render_template('visualizations/articles_by_coverage.html')
-
 
 # 20. Route for getting popular keywords in the last X days
 @app.route('/popular_keywords_last_x_days', methods=['GET'])
@@ -783,6 +837,14 @@ def popular_keywords_last_x_days():
     to find and return the most frequently mentioned keywords in articles published in the last X days.
     """
     days = request.args.get('days')
+    if days is None:
+        return render_template('visualizations/popular_keywords_last_x_days.html', data = [])
+    try:
+        # Check if the number of days is a valid integer
+        days = int(days)
+    except ValueError:
+        # Return an error message if the number of days is not a valid integer
+        return jsonify({"error": "Invalid number of days. Please provide a valid integer."})
 
     if days:
         from datetime import datetime, timedelta
@@ -834,7 +896,6 @@ def popular_keywords_last_x_days():
             return jsonify(result)
         # Pass the result to the template
         return render_template('visualizations/popular_keywords_last_x_days.html', data=result)
-    return render_template('visualizations/popular_keywords_last_x_days.html')
 
 # 21. Route for getting articles by month and year
 @app.route('/articles_by_month', methods=['GET'])
@@ -845,6 +906,17 @@ def articles_by_month():
     """
     year = request.args.get('year') # Get the year from the query parameters
     month = request.args.get('month') # Get the month from the query parameters
+
+    if year is None or month is None or (year and month is None):
+        return render_template('visualizations/articles_by_month.html', data = [])
+    try:
+        # Check if year and month are valid integers
+        year = int(year)
+        month = int(month)
+    except ValueError:
+        # Return an error message if year or month is not a valid integer
+        return jsonify({"error": "Invalid year or month. Please provide valid integers."})
+
     if year and month:
         # Convert year and month to integers
         year = int(year)
@@ -908,8 +980,6 @@ def articles_by_month():
             return jsonify(result)
         # Pass the result to the template
         return render_template('visualizations/articles_by_month.html', data=result)
-    return render_template('visualizations/articles_by_month.html')
-
 
 # 22. Route for getting articles by word count range
 @app.route('/articles_by_word_count_range', methods=['GET'])
@@ -920,6 +990,16 @@ def articles_by_word_count_range():
     """
     min = request.args.get('min')  # Get the minimum word count from the query parameters
     max = request.args.get('max')  # Get the maximum word count from the query parameters
+
+    if min is None or max is None or (min and max is None):
+        return render_template('visualizations/articles_by_word_count_range.html', data = [])
+    try:
+        # Check if min and max are valid integers
+        min = int(min)
+        max = int(max)
+    except ValueError:
+        # Return an error message if min or max is not a valid integer
+        return jsonify({"error": "Invalid min or max. Please provide valid integers."})
 
     if min and max:
         # Define the aggregation pipeline
@@ -955,8 +1035,6 @@ def articles_by_word_count_range():
             return jsonify(result)
         # Pass the result to the template
         return render_template('visualizations/articles_by_word_count_range.html', data=result)
-    return render_template('visualizations/articles_by_word_count_range.html')
-
 
 # 23. Route for getting articles with specific keyword count
 @app.route('/articles_with_specific_keyword_count', methods=['GET'])
@@ -965,7 +1043,15 @@ def articles_with_specific_keyword_count():
     This route handles a GET request to '/articles_with_specific_keyword_count/<count>'. It runs an aggregation pipeline on the 'articles' collection
     to return articles that contain exactly a specified number of keywords.
     """
-    count = int(request.args.get('count'))  # Get the keyword count from the query parameters
+    count = request.args.get('count')  # Get the keyword count from the query parameters
+    if count is None:
+        return render_template('visualizations/articles_with_specific_keyword_count.html', data = [])
+    try:
+        # Check if count is a valid integer
+        count = int(count)
+    except ValueError:
+        # Return an error message if count is not a valid integer
+        return jsonify({"error": "Invalid count. Please provide a valid integer."})
 
     if count:
         # Define the aggregation pipeline
@@ -997,7 +1083,6 @@ def articles_with_specific_keyword_count():
             return jsonify(result)
         # Pass the result to the template
         return render_template('visualizations/articles_with_specific_keyword_count.html', data=result)
-    return render_template('visualizations/articles_with_specific_keyword_count.html')
 
 # 24. Route for getting articles by specific date
 @app.route('/articles_by_specific_date', methods=['GET'])
@@ -1008,13 +1093,20 @@ def articles_by_specific_date():
     """
     date = request.args.get('date')
 
-    if date:
+    if date is None:
+        return render_template('visualizations/articles_by_specific_date.html', data = [])
+    try:
         # Convert the input date to a datetime object
-        date_obj = datetime.strptime(date, "%Y-%m-%d")
+        date = datetime.strptime(date, "%Y-%m-%d")
+    except ValueError:
+        # Return an error message if the date is not in the correct format
+        return jsonify({"error": "Invalid date format. Please use YYYY-MM-DD."})
+
+    if date:
 
         # Calculate the start and end of the day
-        start_of_day = date_obj
-        end_of_day = date_obj.replace(hour=23, minute=59, second=59, microsecond=999999)
+        start_of_day = date
+        end_of_day = date.replace(hour=23, minute=59, second=59, microsecond=999999)
 
         # Define the aggregation pipeline
         pipeline = [
@@ -1039,8 +1131,6 @@ def articles_by_specific_date():
             return jsonify(result)
         # Pass the result to the template
         return render_template('visualizations/articles_by_specific_date.html', data=result)
-    return render_template('visualizations/articles_by_specific_date.html')
-
 
 # 25. Route for getting articles containing specific text
 @app.route('/articles_containing_text', methods=['GET'])
@@ -1050,6 +1140,16 @@ def articles_containing_text():
     to return a list of articles that contain a specific text within their content.
     """
     text = request.args.get('text')
+
+    if text is None:
+        return render_template('visualizations/articles_containing_text.html', data = [])
+    try:
+        # Check if the text is a valid string
+        text = str(text)
+    except ValueError:
+        # Return an error message if the text is not a valid string
+        return jsonify({"error": "Invalid text. Please provide a valid string."})
+
     if text:
         # Define the aggregation pipeline
         pipeline = [
@@ -1074,7 +1174,6 @@ def articles_containing_text():
         # Pass the result to the template
         return render_template('visualizations/articles_containing_text.html', data=result)
 
-
 # 26. Route for getting articles with more than n words
 @app.route('/articles_with_more_than', methods=['GET'])
 def articles_with_more_than():
@@ -1082,7 +1181,14 @@ def articles_with_more_than():
     This route handles a GET request to '/articles_with_more_than/<word_count>'. It runs an aggregation pipeline on the 'articles' collection
     to return a list of articles that have more than a specified number of words.
     """
-    word_count = int(request.args.get('word_count'))
+    word_count = request.args.get('word_count')
+    if word_count is None:
+        return render_template('visualizations/articles_with_more_than.html', data = [])
+    try:
+        word_count = int(word_count)
+    except ValueError:
+        return jsonify({"error": "Invalid word count. Please provide a valid integer."})
+
     if word_count:
         # Define the aggregation pipeline
         pipeline = [
@@ -1118,7 +1224,6 @@ def articles_with_more_than():
             return jsonify(result)
         # Pass the result to the template
         return render_template('visualizations/articles_with_more_than.html', data=result)
-    return render_template('visualizations/articles_with_more_than.html')
 
 # 27. Route for getting articles grouped by coverage
 @app.route('/articles_grouped_by_coverage', methods=['GET'])
@@ -1165,49 +1270,61 @@ def articles_last_x_hours():
     This route handles a GET request to '/articles_last_x_hours/<hours>'.
     It returns a list of articles published in the last X hours.
     """
-    hours = int(request.args.get('hours'))
-
+    hours = request.args.get('hours')
+    if hours is None:
+        return render_template('visualizations/articles_last_x_hours.html', data=[])
+    try:
+        hours = int(hours)
+    except ValueError:
+        return "The 'hours' parameter must be a valid integer.", 400
     if hours:
-        from datetime import datetime, timedelta
+        try:
+            hours = int(hours)
+        except ValueError:
+            return "Invalid value for 'hours'. It must be an integer.", 400
+    else:
+        return "Missing 'hours' parameter.", 400
 
-        # Calculate the date X hours ago
-        start_date = datetime.now() - timedelta(hours=hours)
+    from datetime import datetime, timedelta
 
-        # Define the aggregation pipeline
-        pipeline = [
-            # Stage 1: Convert 'published_time' to date and match documents within the time range
-            {
-                "$addFields": {
-                    "published_time_date": {
-                        "$dateFromString": {"dateString": "$published_time"}
-                    }
-                }
-            },
-            {
-                "$match": {
-                    "published_time_date": {"$gte": start_date}
-                }
-            },
+    # Calculate the date X hours ago
+    start_date = datetime.now() - timedelta(hours=hours)
 
-            # Stage 2: Project the results to include necessary fields (e.g., title)
-            {
-                "$project": {
-                    "_id": 0,  # Exclude the original '_id' field
-                    "title": 1,  # Include the title of the article
-                    "url": 1,  # Include the URL of the article
-                    "published_time": 1  # Include the published time for verification
+    # Define the aggregation pipeline
+    pipeline = [
+        # Stage 1: Convert 'published_time' to date and match documents within the time range
+        {
+            "$addFields": {
+                "published_time_date": {
+                    "$dateFromString": {"dateString": "$published_time"}
                 }
             }
-        ]
+        },
+        {
+            "$match": {
+                "published_time_date": {"$gte": start_date}
+            }
+        },
 
-        # Execute the aggregation pipeline on the collection
-        result = list(collection.aggregate(pipeline))
-        if request.args.get('format') == 'json':
-            # Return the result as a JSON response
-            return jsonify(result)
-        # Pass the result to the template
+        # Stage 2: Project the results to include necessary fields (e.g., title)
+        {
+            "$project": {
+                "_id": 0,  # Exclude the original '_id' field
+                "title": 1,  # Include the title of the article
+                "url": 1,  # Include the URL of the article
+                "published_time": 1  # Include the published time for verification
+            }
+        }
+    ]
+
+    # Execute the aggregation pipeline on the collection
+    result = list(collection.aggregate(pipeline))
+    if request.args.get('format') == 'json':
+        # Return the result as a JSON response
+        return jsonify(result)
+
+    else:# Pass the result to the template
         return render_template('visualizations/articles_last_x_hours.html', data=result)
-    return render_template('visualizations/articles_last_x_hours.html')
 
 # 29. Route for getting articles by title length
 @app.route('/articles_by_title_length', methods=['GET'])

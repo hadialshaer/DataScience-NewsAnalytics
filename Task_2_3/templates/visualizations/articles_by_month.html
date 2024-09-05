@@ -1,10 +1,21 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
-<body>
+{% extends "base.html" %}
 
-</body>
-</html>
+{% block content %}
+
+<div class="container">
+    <h2>Articles by Published Month</h2>
+    <form action="{{ url_for('articles_by_month') }}" method="get">
+        <div class="form-group col-md-6">
+            <label for="year">Year:</label>
+            <input type="number" class="form-control" id="year" name="year" placeholder="Enter year" required>
+        </div>
+        <div class="form-group col-md-6">
+            <label for="month">Month:</label>
+            <input type="number" class="form-control" id="month" name="month" placeholder="Enter month" required>
+             <button type="submit" class="btn btn-primary">Search</button>
+        </div>
+
+    </form>
+</div>
+
+{% endblock %}

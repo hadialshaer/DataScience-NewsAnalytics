@@ -1,10 +1,25 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
-<body>
+{% extends "base.html" %}
 
-</body>
-</html>
+{% block content %}
+
+<div class="container">
+    <h2>Articles by Word Count Range</h2>
+    <form action="{{ url_for('articles_by_word_count_range') }}" method="get">
+        <div class="form-group col-md-6">
+            <label for="min_word_count">Min Word Count:</label>
+            <input type="number" class="form-control" id="min_word_count" name="min_word_count"
+                   placeholder="Enter min word count" required>
+        </div>
+        <div class="form-group col-md-6">
+            <label for="max_word_count">Max Word Count:</label>
+            <input type="number" class="form-control" id="max_word_count" name="max_word_count"
+                   placeholder="Enter max word count" required>
+            <button type="submit" class="btn btn-primary">Search</button>
+        </div>
+
+    </form>
+    <div id="results">
+        <!-- Results or visualizations will be rendered here -->
+    </div>
+</div>
+{% endblock %}

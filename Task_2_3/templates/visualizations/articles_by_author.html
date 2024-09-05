@@ -1,27 +1,135 @@
 {% extends "base.html" %}
 
 {% block content %}
-<style>
-    /* Specific styles */
-    .container {
-        margin-top: 20px;
-    }
-
-    .form-control {
-        margin-bottom: 15px;
-    }
-</style>
 <div class="container">
     <h2>Articles by Author</h2>
-    <form action="{{ url_for('articles_by_author') }}" method="get">
-        <div class="form-group">
+    <form id="searchForm" action="{{ url_for('articles_by_author') }}" method="get">
+        <div class="form-group col-md-6">
             <label for="author_name">Author Name:</label>
             <input type="text" class="form-control" id="author_name" name="author_name" placeholder="Enter author name" required>
+            <button type="submit" class="btn btn-primary">Search</button>
         </div>
-        <button type="submit" class="btn btn-primary">Search</button>
     </form>
-    <div id="results">
-        <!-- Results or visualizations will be rendered here -->
-    </div>
 </div>
+
+<!-- Styles -->
+<style>
+    #chartdiv {
+        width: 100%;
+        max-width: 100%;
+        height: 550px;
+    }
+</style>
+
+<!-- Resources -->
+<script src="https://cdn.amcharts.com/lib/5/index.js"></script>
+<script src="https://cdn.amcharts.com/lib/5/hierarchy.js"></script>
+<script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
+
+<!-- Chart code -->
+<script>
+    am5.ready(function() {
+
+        // Create root element
+        var root = am5.Root.new("chartdiv");
+
+        // Set themes
+        root.setThemes([
+            am5themes_Animated.new(root)
+        ]);
+
+        // Create wrapper container
+        var container = root.container.children.push(am5.Container.new(root, {
+            width: am5.percent(100),
+            height: am5.percent(100),
+            layout: root.verticalLayout
+        }));
+
+        // Function to fetch data based on author name
+        function fetchDataAndRenderChart(authorName) {
+            fetch(`/articles_by_author?author_name=${encodeURIComponent(authorName)}&format=json`)
+                .then(response => response.json())
+                .then(data => {
+                    // Limit to 30 articles
+                    data = data.slice(0, 30);
+
+                    // Transform the data to match the AmCharts structure
+                    var transformedData = transformData(data);
+                    renderChart(transformedData);
+                })
+                .catch(error => console.error("Error fetching data:", error));
+        }
+
+        // Transform the fetched data to the required format for AmCharts
+        function transformData(data) {
+            let transformedData = {
+                value: 0,
+                children: []
+            };
+
+            data.forEach(item => {
+                transformedData.children.push({
+                    name: item.title,
+                    value: 1
+                });
+            });
+
+            return transformedData;
+        }
+
+        // Function to render chart
+        function renderChart(data) {
+            var series = container.children.push(am5hierarchy.ForceDirected.new(root, {
+                singleBranchOnly: false,
+                downDepth: 2,
+                topDepth: 1,
+                initialDepth: 1,
+                valueField: "value",
+                categoryField: "name",
+                childDataField: "children",
+                idField: "name",
+                linkWithField: "linkWith",
+                manyBodyStrength: -10,
+                centerStrength: 0.8
+            }));
+
+            series.get("colors").setAll({
+                step: 2
+            });
+
+            series.links.template.set("strength", 0.5);
+
+            series.data.setAll([data]);
+
+            series.set("selectedDataItem", series.dataItems[0]);
+
+            // Make stuff animate on load
+            series.appear(1000, 100);
+        }
+
+        // Function to get URL parameter
+        function getUrlParameter(name) {
+            var regex = new RegExp("[?&]" + name + "=([^&#]*)");
+            var results = regex.exec(window.location.search);
+            return results === null ? "" : decodeURIComponent(results[1].replace(/\+/g, " "));
+        }
+
+        // Get author name from URL and fetch data if present
+        var authorName = getUrlParameter('author_name');
+        if (authorName) {
+            document.getElementById('author_name').value = authorName;
+            fetchDataAndRenderChart(authorName);
+        }
+
+        // Listen for form submission and fetch data
+        document.getElementById('searchForm').addEventListener('submit', function(event) {
+            // The form submission will reload the page with the query parameter
+        });
+
+    }); // end am5.ready()
+</script>
+
+<!-- HTML -->
+<div id="chartdiv"></div>
+
 {% endblock %}

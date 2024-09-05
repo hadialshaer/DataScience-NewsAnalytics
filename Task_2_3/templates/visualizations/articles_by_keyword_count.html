@@ -1,10 +1,74 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
-<body>
+{% extends "base.html" %}
 
-</body>
-</html>
+{% block content %}
+
+<h2>Articles by Keyword Count</h2>
+
+<style>
+    html, body {
+        width: 100%;
+        height: 100%;
+        margin: 0px;
+    }
+
+    #chartdiv {
+        width: 100%;
+        height: 500px;
+    }
+</style>
+
+<!-- Chart container -->
+<div id="chartdiv"></div>
+
+<script src="//www.amcharts.com/lib/3/amcharts.js"></script>
+<script src="//www.amcharts.com/lib/3/serial.js"></script>
+<script src="//www.amcharts.com/lib/3/themes/light.js"></script>
+
+<script>
+    // Fetch data from the Flask API
+    fetch("http://127.0.0.1:5000/articles_by_keyword_count?format=json")
+        .then(response => response.json())
+        .then(data => {
+            // Process data to match amCharts v3 format
+            let chartData = data.map(item => ({
+                category: item.keyword_count.toString(),
+                count: item.count
+            }));
+
+            // Create the chart
+            var chart = AmCharts.makeChart("chartdiv", {
+                "type": "serial",
+                "theme": "light",
+                "columnWidth": 0.8,
+                "dataProvider": chartData,
+                "graphs": [{
+                    "fillColors": "#67b7dc",
+                    "fillAlphas": 0.9,
+                    "lineColor": "#fff",
+                    "lineAlpha": 0.7,
+                    "type": "column",
+                    "valueField": "count",
+                    "balloonText": "[[category]] keywords: <b>[[value]] articles</b>"
+                }],
+                "categoryField": "category",
+                "categoryAxis": {
+                    "title": "Keyword Count",
+                    "gridPosition": "start",
+                    "labelRotation": 45
+                },
+                "valueAxes": [{
+                    "title": "Articles Count"
+                }],
+                "chartCursor": {
+                    "cursorAlpha": 0.1,
+                    "zoomable": true
+                },
+                "categoryBalloonEnabled": true,
+                "export": {
+                    "enabled": true
+                }
+            });
+        });
+</script>
+
+{% endblock %}

@@ -1,10 +1,83 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
-<body>
+{% extends "base.html" %}
 
-</body>
-</html>
+{% block content %}
+<div class="container">
+    <h2>Article Details</h2>
+    <form action="{{ url_for('article_details') }}" method="get">
+        <div class="form-group col-md-6">
+            <label for="postid">Article ID:</label>
+            <input type="text" class="form-control" id="postid" name="postid" placeholder="Enter article ID" required>
+            <button type="submit" class="btn btn-primary">Search</button>
+        </div>
+    </form>
+
+    <!-- Container for displaying the article details -->
+    <div id="datatable" class="mt-4">
+        <!-- The table with article details will be dynamically inserted here -->
+    </div>
+</div>
+
+<!-- Include amCharts and DataLoader scripts -->
+<script src="https://www.amcharts.com/lib/3/amcharts.js"></script>
+<script src="https://www.amcharts.com/lib/3/plugins/dataloader/dataloader.min.js"></script>
+
+<!-- Add custom styles for the data table -->
+<style>
+    #datatable table {
+        font-family: Arial;
+        border: 1px solid #ccc;
+        border-collapse: collapse;
+        width: 100%;
+    }
+
+    #datatable table td, #datatable table th {
+        padding: 5px 9px;
+        border: 1px solid #eee;
+        text-align: left;
+    }
+
+    #datatable table tr:nth-child(even) td {
+        background: #eee;
+    }
+</style>
+
+<!-- JavaScript to handle the fetching and displaying of article details -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const data = {{ data | tojson | safe }};
+        const datatable = document.getElementById('datatable');
+
+        if (data.length > 0) {
+            // Create the table
+            var table = document.createElement("table");
+
+            // Add rows for each field (Title, URL, Keywords)
+            var fields = {
+                "Title": data[0].title,
+                "URL": '<a href="' + data[0].url + '" target="_blank">' + data[0].url + '</a>',
+                "Keywords": data[0].keywords.join(', ')
+            };
+
+            for (var key in fields) {
+                var row = document.createElement("tr");
+
+                // Create the header cell
+                var headerCol = document.createElement("th");
+                headerCol.innerHTML = key;
+                row.appendChild(headerCol);
+
+                // Create the data cell
+                var dataCol = document.createElement("td");
+                dataCol.innerHTML = fields[key];
+                row.appendChild(dataCol);
+
+                // Append the row to the table
+                table.appendChild(row);
+            }
+
+            // Append the table to the datatable div
+            datatable.appendChild(table);
+        }
+    });
+</script>
+{% endblock %}

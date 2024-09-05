@@ -1,10 +1,186 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
-<body>
+{% extends "base.html" %}
 
-</body>
-</html>
+{% block content %}
+
+<h2>Articles by Date</h2>
+
+<!-- Styles -->
+<style>
+    #chartdiv {
+        width: 100%;
+        height: 500px;
+    }
+</style>
+
+<!-- Resources -->
+<script src="https://cdn.amcharts.com/lib/5/index.js"></script>
+<script src="https://cdn.amcharts.com/lib/5/xy.js"></script>
+<script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
+
+<!-- Chart code -->
+<script>
+am5.ready(function() {
+
+  // Create root element
+  var root = am5.Root.new("chartdiv");
+
+  // Set themes
+  root.setThemes([
+    am5themes_Animated.new(root)
+  ]);
+
+  // Create chart
+  var chart = root.container.children.push(am5xy.XYChart.new(root, {
+    panX: true,
+    panY: true,
+    wheelX: "panX",
+    wheelY: "zoomX",
+    pinchZoomX: true,
+    paddingLeft: 0
+  }));
+
+  // Add cursor
+  var cursor = chart.set("cursor", am5xy.XYCursor.new(root, {}));
+  cursor.lineX.set("forceHidden", true);
+  cursor.lineY.set("forceHidden", true);
+
+  // Function to fetch data
+  async function fetchData() {
+    try {
+      const response = await fetch('http://127.0.0.1:5000/articles_by_date?format=json');
+      const data = await response.json();
+      return data.map(item => ({
+        date: new Date(item.date).getTime(),
+        value: item.count
+      }));
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      return [];
+    }
+  }
+
+  // Create axes
+  var xAxis = chart.xAxes.push(am5xy.DateAxis.new(root, {
+    baseInterval: {
+      timeUnit: "day",
+      count: 1
+    },
+    renderer: am5xy.AxisRendererX.new(root, {
+      minorGridEnabled: true,
+      minGridDistance: 80
+    })
+  }));
+
+  var yAxis = chart.yAxes.push(am5xy.ValueAxis.new(root, {
+    renderer: am5xy.AxisRendererY.new(root, {})
+  }));
+
+  // Add series
+  var series = chart.series.push(am5xy.LineSeries.new(root, {
+    name: "Series",
+    xAxis: xAxis,
+    yAxis: yAxis,
+    valueYField: "value",
+    valueXField: "date",
+    tooltip: am5.Tooltip.new(root, {
+      labelText: "{valueY}"
+    })
+  }));
+
+  series.fills.template.setAll({
+    fillOpacity: 0.2,
+    visible: true
+  });
+
+  // Add scrollbar
+  chart.set("scrollbarX", am5.Scrollbar.new(root, {
+    orientation: "horizontal"
+  }));
+
+  // Fetch data and set it to the series
+  fetchData().then(data => {
+    series.data.setAll(data);
+
+    var rangeDate = new Date();
+    am5.time.add(rangeDate, "day", Math.round(series.dataItems.length / 2));
+    var rangeTime = rangeDate.getTime();
+
+    // Add series range
+    var seriesRangeDataItem = xAxis.makeDataItem({});
+    var seriesRange = series.createAxisRange(seriesRangeDataItem);
+    seriesRange.fills.template.setAll({
+      visible: true,
+      opacity: 0.3
+    });
+
+    seriesRange.fills.template.set("fillPattern", am5.LinePattern.new(root, {
+      color: am5.color(0xff0000),
+      rotation: 45,
+      strokeWidth: 2,
+      width: 2000,
+      height: 2000,
+      fill: am5.color(0xffffff)
+    }));
+
+    seriesRange.strokes.template.set("stroke", am5.color(0xff0000));
+
+    xAxis.onPrivate("max", function (value) {
+      seriesRangeDataItem.set("endValue", value);
+      seriesRangeDataItem.set("value", rangeTime);
+    });
+
+    // Add axis range
+    var range = xAxis.createAxisRange(xAxis.makeDataItem({}));
+    var color = root.interfaceColors.get("primaryButton");
+
+    range.set("value", rangeDate.getTime());
+    range.get("grid").setAll({
+      strokeOpacity: 1,
+      stroke: color
+    });
+
+    var resizeButton = am5.Button.new(root, {
+      themeTags: ["resize", "horizontal"],
+      icon: am5.Graphics.new(root, {
+        themeTags: ["icon"]
+      })
+    });
+
+    // Restrict resizing and dragging
+    resizeButton.adapters.add("y", function () {
+      return 0;
+    });
+
+    resizeButton.adapters.add("x", function (x) {
+      return Math.max(0, Math.min(chart.plotContainer.width(), x));
+    });
+
+    // Change range when x changes
+    resizeButton.events.on("dragged", function () {
+      var x = resizeButton.x();
+      var position = xAxis.toAxisPosition(x / chart.plotContainer.width());
+
+      var value = xAxis.positionToValue(position);
+
+      range.set("value", value);
+      seriesRangeDataItem.set("value", value);
+      seriesRangeDataItem.set("endValue", xAxis.getPrivate("max"));
+    });
+
+    // Set bullet for the range
+    range.set("bullet", am5xy.AxisBullet.new(root, {
+      sprite: resizeButton
+    }));
+
+    // Animate on load
+    series.appear(1000);
+    chart.appear(1000, 100);
+  });
+
+}); // end am5.ready()
+</script>
+
+<!-- HTML -->
+<div id="chartdiv"></div>
+
+{% endblock %}

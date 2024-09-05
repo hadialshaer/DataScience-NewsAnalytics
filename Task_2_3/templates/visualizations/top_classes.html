@@ -1,10 +1,70 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
-<body>
+{% extends "base.html" %}
 
-</body>
-</html>
+{% block content %}
+
+<h2>Articles by Category</h2>
+
+<!-- Chart container -->
+<div id="chartdiv" style="width: 100%; height: 500px;"></div>
+
+<script src="//www.amcharts.com/lib/3/amcharts.js"></script>
+<script src="//www.amcharts.com/lib/3/serial.js"></script>
+<script src="//www.amcharts.com/lib/3/themes/light.js"></script>
+
+<script>
+// Fetch data from the Flask API
+fetch("http://127.0.0.1:5000/top_classes?format=json")
+    .then(response => response.json())
+    .then(data => {
+        // Assign a unique color for each category
+        let colors = [
+            "#FF6384", "#36A2EB", "#FFCE56", "#4BC0C0", "#9966FF", "#FF9F40", "#FFCD56"
+        ];
+
+        // Process data to amCharts format with colors
+        let chartData = data.map((item, index) => ({
+            category: item.category.trim(),
+            count: item.count,
+            color: colors[index % colors.length]  // Assign colors in a loop
+        }));
+
+        // Create the stacked bar chart
+        var chart = AmCharts.makeChart("chartdiv", {
+            "type": "serial",
+            "theme": "light",
+            "dataProvider": chartData,
+            "categoryField": "category",
+            "rotate": true,  // Horizontal bars
+            "graphs": [{
+                "balloonText": "[[category]]: <b>[[value]] articles</b>",
+                "fillAlphas": 0.8,
+                "lineAlpha": 0.2,
+                "type": "column",
+                "valueField": "count",
+                "fillColorsField": "color"  // Use color field for bars
+            }],
+            "categoryAxis": {
+                "gridPosition": "start",
+                "labelRotation": 45,  // Rotate labels
+                "title": "Category"
+            },
+            "valueAxes": [{
+                "title": "Articles Count",
+                "stackType": "none"  // No stacking needed
+            }],
+            "chartCursor": {
+                "cursorAlpha": 0.1,
+                "zoomable": true,
+                "categoryBalloonEnabled": true
+            },
+            "legend": {
+                "enabled": false  // Disable legend for single series
+            },
+            "export": {
+                "enabled": true
+            }
+        });
+    });
+</script>
+
+{% endblock %}

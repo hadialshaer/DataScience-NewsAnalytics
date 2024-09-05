@@ -1,10 +1,94 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Title</title>
-</head>
-<body>
+{% extends "base.html" %}
 
-</body>
-</html>
+{% block content %}
+
+<div class="container">
+    <h2>Articles by Publication Year</h2>
+    <form id="yearForm">
+        <div class="form-group col-md-6">
+            <label for="year">Year:</label>
+            <input type="text" class="form-control" id="year" name="year" placeholder="Enter year" required>
+            <button type="submit" class="btn btn-primary">Search</button>
+        </div>
+    </form>
+
+    <div id="chartdiv" style="width: 100%; height: 500px;"></div>
+</div>
+
+<!-- Include amCharts libraries -->
+<script src="https://cdn.amcharts.com/lib/4/core.js"></script>
+<script src="https://cdn.amcharts.com/lib/4/charts.js"></script>
+<script src="https://cdn.amcharts.com/lib/4/themes/animated.js"></script>
+
+<!-- Chart code -->
+<script>
+    document.getElementById('yearForm').addEventListener('submit', function(event) {
+        event.preventDefault();
+        let year = document.getElementById('year').value;
+
+        fetch(`http://127.0.0.1:5000/articles_by_year?year=${year}&format=json`)
+            .then(response => response.json())
+            .then(data => {
+                // Check if data is an array and has at least one element
+                if (Array.isArray(data) && data.length > 0) {
+                    // Extract year and total articles from the response
+                    let yearData = data[0].year || year;
+                    let totalArticles = data[0].total_articles || 0;
+
+                    // Clear existing chart if it exists
+                    if (window.chart) {
+                        window.chart.dispose();
+                    }
+
+                    // Create chart data
+                    let chartData = [{ "year": yearData, "total_articles": totalArticles }];
+
+                    // Create amCharts bar chart
+                    am4core.useTheme(am4themes_animated);
+                    let chart = am4core.create("chartdiv", am4charts.XYChart);
+                    chart.data = chartData;
+
+                    // Create category axis
+                    let categoryAxis = chart.xAxes.push(new am4charts.CategoryAxis());
+                    categoryAxis.dataFields.category = "year";
+                    categoryAxis.title.text = "Year";
+                    categoryAxis.renderer.labels.template.maxWidth = 200;
+                    categoryAxis.renderer.labels.template.wrap = true;
+
+                    // Create value axis
+                    let valueAxis = chart.yAxes.push(new am4charts.ValueAxis());
+                    valueAxis.title.text = "Number of Articles";
+                    valueAxis.min = 0;
+
+                    // Create series
+                    let series = chart.series.push(new am4charts.ColumnSeries());
+                    series.dataFields.valueY = "total_articles";
+                    series.dataFields.categoryX = "year";
+                    series.name = "Articles";
+                    series.columns.template.tooltipText = "{categoryX}: [bold]{valueY}[/]";
+                    series.columns.template.fillOpacity = 0.8;
+                    series.columns.template.strokeWidth = 2;
+                    series.columns.template.strokeOpacity = 1;
+
+                    // Adding a chart title
+                    let title = chart.titles.create();
+                    title.text = `Articles Published in ${yearData}`;
+                    title.fontSize = 25;
+                    title.marginBottom = 30;
+
+                    // Store the chart object for future disposal
+                    window.chart = chart;
+                } else {
+                    console.error('Unexpected data format:', data);
+                    // Handle empty or unexpected response
+                    alert('No data found for the specified year.');
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching data:', error);
+                alert('An error occurred while fetching data.');
+            });
+    });
+</script>
+
+{% endblock %}

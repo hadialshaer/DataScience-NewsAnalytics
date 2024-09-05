@@ -1,10 +1,19 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
-<body>
+{% extends "base.html" %}
 
-</body>
-</html>
+{% block content %}
+
+<div class="container">
+    <h2>Articles with Specific Keyword Count</h2>
+    <form action="{{ url_for('articles_with_specific_keyword_count') }}" method="get">
+        <div class="form-group">
+            <label for="keyword_count">Keyword Count:</label>
+            <input type="number" class="form-control" id="keyword_count" name="keyword_count" placeholder="Enter keyword count" required>
+            <button type="submit" class="btn btn-primary">Search</button>
+        </div>
+
+    </form>
+    <div id="results">
+        <!-- Results or visualizations will be rendered here -->
+    </div>
+</div>
+{% endblock %}

@@ -9,7 +9,39 @@
 
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
     <link rel="stylesheet" href="static/css/style.css">
+    <style>
+    .container {
+    margin-top: 20px;
+    }
 
+    .form-control {
+    margin-bottom: 15px;
+    background-color: #f0f8ff; /* Light blue background for input fields */
+    color: #333; /* Dark text color */
+    border: 1px solid #007bff; /* Blue border */
+    }
+
+    .form-control::placeholder {
+    color: #6c757d; /* Light grey color for placeholder text */
+    opacity: 1; /* Ensures the placeholder text is fully opaque */
+    }
+
+    .form-control:focus {
+    border-color: #0056b3; /* Darker blue border on focus */
+    box-shadow: 0 0 0 0.2rem rgba(38, 143, 255, 0.25); /* Subtle blue shadow on focus */
+    }
+
+    .btn-primary {
+    background-color: #007bff; /* Blue background for the button */
+    border-color: #007bff; /* Blue border for the button */
+    }
+
+    .btn-primary:hover {
+    background-color: #0056b3; /* Darker blue on hover */
+    border-color: #004085; /* Even darker blue on hover */
+    }
+
+</style>
 </head>
 <body>
 
@@ -76,6 +108,77 @@
 
             <li>
                 <a href="{{ url_for('articles_with_video') }}">Articles Containing Video</a>
+            </li>
+            <li>
+                <a href="{{ url_for('articles_by_year') }}">Articles by Publication Year</a>
+            </li>
+
+            <li>
+                <a href="{{ url_for('longest_articles') }}">Longest Articles</a>
+            </li>
+
+            <li>
+                <a href="{{ url_for('shortest_articles') }}">Shortest Articles</a>
+            </li>
+
+            <li>
+                <a href="{{ url_for('articles_by_keyword_count') }}">Articles by Keyword Count</a>
+            </li>
+
+            <li>
+                <a href="{{ url_for('articles_with_thumbnail') }}">Articles by Thumbnail Presence</a>
+            </li>
+
+            <li>
+                <a href="{{ url_for('articles_updated_after_publication') }}">Articles Updated After Publication</a>
+            </li>
+
+            <li>
+                <a href="{{ url_for('articles_by_coverage') }}">Articles by Coverage</a>
+            </li>
+
+            <li>
+                <a href="{{ url_for('popular_keywords_last_x_days') }}">Most Popular Keywords in the Last X Days</a>
+            </li>
+
+            <li>
+                <a href="{{ url_for('articles_by_month') }}">Articles by Published Month</a>
+            </li>
+
+            <li>
+                <a href="{{ url_for('articles_by_word_count_range') }}">Articles by Word Count Range</a>
+            </li>
+
+            <li>
+                <a href="{{ url_for('articles_with_specific_keyword_count') }}">Articles with Specific Keyword Count</a>
+            </li>
+
+            <li>
+                <a href="{{ url_for('articles_by_specific_date') }}">Articles by Specific Date</a>
+            </li>
+
+            <li>
+                <a href="{{ url_for('articles_containing_text') }}">Articles Containing Specific Text</a>
+            </li>
+
+            <li>
+                <a href="{{ url_for('articles_with_more_than') }}">Articles with More than N Words</a>
+            </li>
+
+            <li>
+                <a href="{{ url_for('articles_grouped_by_coverage') }}">Articles Grouped by Coverage</a>
+            </li>
+
+            <li>
+                <a href="{{ url_for('articles_last_x_hours') }}">Articles Published in Last X Hours</a>
+            </li>
+
+            <li>
+                <a href="{{ url_for('articles_by_title_length') }}">Articles by Length of Title</a>
+            </li>
+
+            <li>
+                <a href="{{ url_for('most_updated_articles') }}">Most Updated Articles</a>
             </li>
 
         </ul>

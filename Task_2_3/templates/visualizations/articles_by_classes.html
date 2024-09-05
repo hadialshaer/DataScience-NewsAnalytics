@@ -1,10 +1,106 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
-<body>
+{% extends "base.html" %}
 
-</body>
-</html>
+{% block content %}
+
+<h2>Articles by Classes</h2>
+
+<!-- Styles -->
+<style>
+  #chartdiv {
+    width: 100%;
+    height: 500px;
+  }
+</style>
+
+<!-- Resources -->
+<script src="https://cdn.amcharts.com/lib/5/index.js"></script>
+<script src="https://cdn.amcharts.com/lib/5/percent.js"></script>
+<script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
+
+<!-- Chart code -->
+<script>
+am5.ready(function() {
+
+    // Create root element
+    var root = am5.Root.new("chartdiv");
+
+    // Set themes
+    root.setThemes([
+        am5themes_Animated.new(root)
+    ]);
+
+    // Create chart
+    var chart = root.container.children.push(am5percent.PieChart.new(root, {
+        radius: am5.percent(90),
+        innerRadius: am5.percent(50),
+        layout: root.horizontalLayout
+    }));
+
+    // Create series
+    var series = chart.series.push(am5percent.PieSeries.new(root, {
+        name: "Articles",
+        valueField: "count",
+        categoryField: "category"
+    }));
+
+    // Fetch data from the Flask API
+    fetch("http://127.0.0.1:5000/articles_by_classes?format=json")
+        .then(response => response.json())
+        .then(data => {
+            // Process and map the data
+            var chartData = data.map(item => ({
+                category: item.class.trim(),
+                count: item.count
+            }));
+
+            // Add data to the pie chart
+            series.data.setAll(chartData);
+
+            // Customize pie chart slices
+            series.slices.template.setAll({
+                tooltipText: "{category}: {value} articles",  // Tooltip on hover
+                fillOpacity: 0.8,
+                strokeWidth: 2,
+                strokeOpacity: 1
+            });
+
+            // Adding gradients to pie slices
+            series.slices.template.set("fillGradient", am5.RadialGradient.new(root, {
+                stops: [{
+                    brighten: -0.8
+                }, {
+                    brighten: -0.5
+                }, {
+                    brighten: 0
+                }]
+            }));
+
+            // Create legend
+            var legend = chart.children.push(am5.Legend.new(root, {
+                centerY: am5.percent(50),
+                y: am5.percent(50),
+                layout: root.verticalLayout
+            }));
+
+            // Customize the legend
+            legend.valueLabels.template.setAll({ textAlign: "right" });
+            legend.labels.template.setAll({
+                maxWidth: 140,
+                width: 140,
+                oversizedBehavior: "wrap"
+            });
+
+            // Set legend data
+            legend.data.setAll(series.dataItems);
+        });
+
+    // Animate the chart on load
+    series.appear(1000, 100);
+
+}); // end am5.ready()
+</script>
+
+<!-- HTML -->
+<div id="chartdiv"></div>
+
+{% endblock %}

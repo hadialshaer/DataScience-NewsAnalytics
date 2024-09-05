@@ -1,10 +1,22 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
-<body>
+{% extends "base.html" %}
 
-</body>
-</html>
+{% block content %}
+<div class="container">
+    <h2>Articles Containing Specific Text</h2>
+    <form action="{{ url_for('articles_containing_text') }}" method="get">
+        <div class="form-group col-md-6">
+            <label for="text" class="col-sm-2 col-form-label">Text:</label>
+            <div class="col-sm-10">
+                <input type="text" class="form-control" id="text" name="text" placeholder="Enter text" required>
+                <button type="submit" class="btn btn-primary">Search</button>
+            </div>
+
+        </div>
+
+    </form>
+
+    <div id="results">
+        <!-- Results or visualizations will be rendered here -->
+    </div>
+</div>
+{% endblock %}
