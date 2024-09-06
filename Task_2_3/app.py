@@ -1,12 +1,9 @@
 from datetime import datetime  # For handling dates and times
-
 from flask import Flask, jsonify, render_template, request  # For creating the Flask app and returning JSON responses
 from pymongo import MongoClient  # For connecting to MongoDB
-from flask_cors import CORS # For enabling Cross-Origin Resource Sharing (CORS)
 
 # Initialize Flask app
 app = Flask(__name__)
-CORS(app) # Enable CORS for the app
 
 # Initialize MongoDB client and specify the database and collection
 client = MongoClient('mongodb://localhost:27017/')
@@ -307,6 +304,7 @@ def recent_articles():
     """
     # Define the aggregation pipeline
     pipeline = [
+
         # Stage 1: Sort the articles by 'published_time' in descending order
         {"$sort": {"published_time": -1}},
 
@@ -981,18 +979,22 @@ def articles_by_month():
         # Pass the result to the template
         return render_template('visualizations/articles_by_month.html', data=result)
 
+
 # 22. Route for getting articles by word count range
 @app.route('/articles_by_word_count_range', methods=['GET'])
 def articles_by_word_count_range():
     """
-    This route handles a GET request to '/articles_by_word_count_range/<min>/<max>'. It runs an aggregation pipeline on the 'articles' collection
-    to return a list of articles whose word count falls within the specified range.
+    This route handles a GET request to '/articles_by_word_count_range'.
+    It runs an aggregation pipeline on the 'articles' collection to return a message
+    showing the number of articles within the specified word count range.
     """
     min = request.args.get('min')  # Get the minimum word count from the query parameters
     max = request.args.get('max')  # Get the maximum word count from the query parameters
 
     if min is None or max is None or (min and max is None):
-        return render_template('visualizations/articles_by_word_count_range.html', data = [])
+        return render_template('visualizations/articles_by_word_count_range.html',
+                               data="Articles between 0 and 0 words: 0 articles")
+
     try:
         # Check if min and max are valid integers
         min = int(min)
@@ -1014,27 +1016,31 @@ def articles_by_word_count_range():
             # Stage 2: Match documents with 'word_count' within the specified range
             {
                 "$match": {
-                    "word_count": {"$gte": int(min), "$lte": int(max)}
+                    "word_count": {"$gte": min, "$lte": max}
                 }
             },
 
-            # Stage 3: Project the results to include necessary fields (e.g., title, word_count)
+            # Stage 3: Count the number of articles within the specified range
             {
-                "$project": {
-                    "_id": 0,  # Exclude the original '_id' field
-                    "title": 1,  # Include the title of the article
-                    "url": 1,  # Include the URL of the article
-                    "word_count": 1  # Include the word count of the article
-                }
+                "$count": "article_count"
             }
         ]
+
         # Execute the aggregation pipeline on the collection
         result = list(collection.aggregate(pipeline))
+
+        # If no articles were found, set count to 0
+        article_count = result[0]['article_count'] if result else 0
+
+        # Format the message with min, max, and article count
+        message = f"Articles between {min} and {max} words: {article_count} articles"
+
         if request.args.get('format') == 'json':
             # Return the result as a JSON response
-            return jsonify(result)
+            return jsonify({"message": message})
+
         # Pass the result to the template
-        return render_template('visualizations/articles_by_word_count_range.html', data=result)
+        return render_template('visualizations/articles_by_word_count_range.html', data=message)
 
 # 23. Route for getting articles with specific keyword count
 @app.route('/articles_with_specific_keyword_count', methods=['GET'])
@@ -1088,49 +1094,59 @@ def articles_with_specific_keyword_count():
 @app.route('/articles_by_specific_date', methods=['GET'])
 def articles_by_specific_date():
     """
-    This route handles a GET request to '/articles_by_specific_date/<date>'. It runs an aggregation pipeline on the 'articles' collection
-    to return all articles published on the specified date.
+    This route handles a GET request to '/articles_by_specific_date'. It returns the date and
+    count of articles published on the specified date.
     """
-    date = request.args.get('date')
+    date = request.args.get('date')  # Date format from the form: "YYYY-MM-DD"
 
     if date is None:
-        return render_template('visualizations/articles_by_specific_date.html', data = [])
+        return render_template('visualizations/articles_by_specific_date.html', data=[])
+
     try:
         # Convert the input date to a datetime object
-        date = datetime.strptime(date, "%Y-%m-%d")
+        specific_date = datetime.strptime(date, "%Y-%m-%d")
     except ValueError:
         # Return an error message if the date is not in the correct format
         return jsonify({"error": "Invalid date format. Please use YYYY-MM-DD."})
 
-    if date:
+    # If the date is valid, proceed
+    if specific_date:
+        # The date comes as "YYYY-MM-DD", so we match the start of the published_time string
+        date_str = specific_date.strftime("%Y-%m-%d")
 
-        # Calculate the start and end of the day
-        start_of_day = date
-        end_of_day = date.replace(hour=23, minute=59, second=59, microsecond=999999)
-
-        # Define the aggregation pipeline
+        # Define the aggregation pipeline to match articles by date and count them
         pipeline = [
             {"$match": {
                 "published_time": {
-                    "$gte": start_of_day,
-                    "$lt": end_of_day
+                    "$gte": f"{date_str}T00:00:00",  # Start of the specific date
+                    "$lt": f"{date_str}T23:59:59"  # End of the specific date
                 }
+            }},
+            {"$group": {
+                "_id": None,  # No need to group by date as we are filtering for a specific day
+                "count": {"$sum": 1}  # Count the number of articles
             }},
             {"$project": {
                 "_id": 0,  # Exclude the _id field
-                "title": 1,
-                "url": 1,
-                "published_time": 1
+                "date": {"$literal": date_str},  # Include the specific date in the result
+                "count": 1  # Include the count of articles
             }}
         ]
 
-        # Execute the aggregation pipeline on the collection
+        # Execute the aggregation pipeline
         result = list(collection.aggregate(pipeline))
+
+        # If no articles found, return empty data
+        if not result:
+            result = [{"date": date_str, "count": 0}]
+
         if request.args.get('format') == 'json':
             # Return the result as a JSON response
             return jsonify(result)
-        # Pass the result to the template
+
+        # Render the template with the date and count of articles
         return render_template('visualizations/articles_by_specific_date.html', data=result)
+
 
 # 25. Route for getting articles containing specific text
 @app.route('/articles_containing_text', methods=['GET'])
@@ -1153,17 +1169,12 @@ def articles_containing_text():
     if text:
         # Define the aggregation pipeline
         pipeline = [
-            # Stage 1: Match documents where 'content' contains the specified text
+            # Stage 1: Match documents where 'full_text' contains the specified text
             {"$match": {"full_text": {"$regex": text, "$options": "i"}}},
 
-            # Stage 2: Project the results to include necessary fields (e.g., title)
-            {
-                "$project": {
-                    "_id": 0,  # Exclude the original '_id' field
-                    "title": 1,  # Include the title of the article
-                    "url": 1  # Include the URL of the article
-                }
-            }
+            # Stage 2: Count the total matching documents
+            {"$count": "total_articles"}
+
         ]
 
         # Execute the aggregation pipeline on the collection
@@ -1234,23 +1245,26 @@ def articles_grouped_by_coverage():
     """
     # Define the aggregation pipeline
     pipeline = [
-        # Stage 1: Unwind the 'classes' array, creating a document for each class
+        # Stage 1: Unwind the 'classes' array to create a document for each class
         {"$unwind": "$classes"},
 
-        # Stage 2: Group by the 'classes.key' field and count the number of articles for each coverage
+        # Stage 2: Match documents where the 'classes.mapping' is 'coverage'
+        {"$match": {"classes.mapping": "coverage"}},
+
+        # Stage 3: Group by the 'classes.value' field (each coverage type) and count the number of articles
         {
             "$group": {
-                "_id": "$classes.value",
-                "count": {"$sum": 1}
+                "_id": "$classes.value",  # Group by coverage type found in 'classes.value'
+                "count": {"$sum": 1}  # Count the number of documents in each group
             }
         },
 
-        # Stage 3: Project the results, renaming '_id' to 'coverage' and keeping the 'count'
+        # Stage 4: Project the results, renaming '_id' to 'coverage' and keeping the 'count'
         {
             "$project": {
-                "coverage": "$_id",
-                "count": 1,
-                "_id": 0
+                "coverage": "$_id",  # Rename '_id' (which holds the coverage type) to 'coverage'
+                "count": 1,  # Include the count of articles
+                "_id": 0  # Exclude the MongoDB-generated '_id' field
             }
         }
     ]

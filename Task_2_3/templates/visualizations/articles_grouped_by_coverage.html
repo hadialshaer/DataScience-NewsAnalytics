@@ -1,26 +1,107 @@
 {% extends "base.html" %}
 
 {% block content %}
-
 <h2>Articles Grouped by Coverage</h2>
+<div class="container">
 
+    <!-- Chart container -->
+    <div id="chartdiv"></div>
 
+</div>
 
+<!-- Resources -->
+<script src="https://cdn.amcharts.com/lib/5/index.js"></script>
+<script src="https://cdn.amcharts.com/lib/5/percent.js"></script>
+<script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
 
+<!-- Styles -->
+<style>
+#chartdiv {
+  width: 100%;
+  height: 600px;  /* Increase the height for better visibility */
+}
+</style>
 
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    // Fetch data from the API
+    fetch('/articles_grouped_by_coverage?format=json')
+    .then(response => response.json())
+    .then(data => {
+        // Map the data to match the format required for the pie chart
+        const chartData = data.map(item => ({
+            value: item.count,
+            category: item.coverage
+        }));
 
+        // Initialize the chart with the fetched data
+        renderPieChart(chartData);
+    })
+    .catch(error => console.error('Error fetching data:', error));
+});
 
+function renderPieChart(chartData) {
+    am5.ready(function() {
+        // Create root element
+        var root = am5.Root.new("chartdiv");
 
+        // Set themes
+        root.setThemes([
+            am5themes_Animated.new(root)
+        ]);
 
+        // Create pie chart
+        var chart = root.container.children.push(am5percent.PieChart.new(root, {
+            layout: root.verticalLayout,
+            innerRadius: am5.percent(30)  // Create a donut style for better visualization
+        }));
 
+        // Create pie series
+        var series = chart.series.push(am5percent.PieSeries.new(root, {
+            valueField: "value",
+            categoryField: "category",
+            labels: {
+                template: {
+                    forceHidden: true  // Ensure the labels are completely hidden
+                }
+            },
+            tooltips: {
+                template: {
+                    labelText: "{category}: {value}"  // Show labels only in the tooltips
+                }
+            }
+        }));
 
+        // Add data to the chart
+        series.data.setAll(chartData);
 
+        // Create legend and adjust its size and positioning
+        var legend = chart.children.push(am5.Legend.new(root, {
+            centerX: am5.percent(50),
+            x: am5.percent(50),
+            marginTop: 15,
+            marginBottom: 15,
+            width: am5.percent(90)  // Adjust width for better fit
+        }));
 
+        // Adjust legend text size
+        legend.labels.template.setAll({
+            fontSize: 12  // Smaller font size for better fit
+        });
 
+        // Adjust legend marker size
+        legend.markers.template.setAll({
+            width: 12,  // Smaller marker size
+            height: 12
+        });
 
+        // Link legend with series data
+        legend.data.setAll(series.dataItems);
 
-
-
-
+        // Animate the pie chart on load
+        series.appear(1000, 100);
+    });
+}
+</script>
 
 {% endblock %}

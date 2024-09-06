@@ -4,22 +4,87 @@
 
 <div class="container">
     <h2>Articles by Word Count Range</h2>
-    <form action="{{ url_for('articles_by_word_count_range') }}" method="get">
+    <form id="word-count-form" action="{{ url_for('articles_by_word_count_range') }}" method="get">
         <div class="form-group col-md-6">
-            <label for="min_word_count">Min Word Count:</label>
-            <input type="number" class="form-control" id="min_word_count" name="min_word_count"
+            <label for="min">Min Word Count:</label>
+            <input type="number" class="form-control" id="min" name="min"
                    placeholder="Enter min word count" required>
         </div>
         <div class="form-group col-md-6">
-            <label for="max_word_count">Max Word Count:</label>
-            <input type="number" class="form-control" id="max_word_count" name="max_word_count"
+            <label for="max">Max Word Count:</label>
+            <input type="number" class="form-control" id="max" name="max"
                    placeholder="Enter max word count" required>
             <button type="submit" class="btn btn-primary">Search</button>
         </div>
-
     </form>
-    <div id="results">
-        <!-- Results or visualizations will be rendered here -->
-    </div>
+
+    <!-- Div to display the chart -->
+    <div id="chartdiv" style="width: 100%; height: 500px;"></div>
 </div>
+
+<!-- Include amCharts core and chart libraries -->
+<script src="//www.amcharts.com/lib/3/amcharts.js"></script>
+<script src="//www.amcharts.com/lib/3/serial.js"></script>
+<script src="//www.amcharts.com/lib/3/themes/light.js"></script>
+
+<script>
+    // Attach event listener to the form submit
+    document.getElementById('word-count-form').addEventListener('submit', function(event) {
+        event.preventDefault();
+
+        // Get the min and max values from the input fields
+        const min = document.getElementById('min').value;
+        const max = document.getElementById('max').value;
+
+        // Fetch data from the server
+        fetch(`http://127.0.0.1:5000/articles_by_word_count_range?min=${min}&max=${max}&format=json`)
+            .then(response => response.json())
+            .then(data => {
+                // Extract the number of articles from the message
+                const message = data.message;
+                const articlesCount = parseInt(message.match(/(\d+) articles$/)[1]);
+
+                // Prepare data for the chart
+                const chartData = [{
+                    "category": `${min}-${max}`,  // X-axis label (range)
+                    "count": articlesCount        // Y-axis value (number of articles)
+                }];
+
+                // Generate the chart using amCharts
+                var chart = AmCharts.makeChart("chartdiv", {
+                    "type": "serial",
+                    "theme": "light",
+                    "dataProvider": chartData,
+                    "graphs": [{
+                        "fillColors": "#67b7dc",   // Customize bar color
+                        "fillAlphas": 0.9,
+                        "lineColor": "#fff",
+                        "lineAlpha": 0.7,
+                        "type": "column",
+                        "valueField": "count",   // Y-axis data
+                        "balloonText": "<b>[[category]]: [[value]] articles</b>"
+                    }],
+                    "categoryField": "category",  // X-axis field
+                    "categoryAxis": {
+                        "title": "Word Count Range",
+                        "gridPosition": "start"
+                    },
+                    "valueAxes": [{
+                        "title": "Number of Articles"
+                    }],
+                    "chartCursor": {
+                        "cursorAlpha": 0.1,
+                        "zoomable": true  // Enable zooming
+                    },
+                    "export": {
+                        "enabled": true  // Enable exporting options
+                    }
+                });
+            })
+            .catch(error => {
+                console.error('Error fetching data:', error);
+            });
+    });
+</script>
+
 {% endblock %}
