@@ -2,24 +2,131 @@
 
 {% block content %}
 
-
 <div class="container">
     <h2>Articles Published in Last X Hours</h2>
-    <form action="{{ url_for('articles_last_x_hours') }}" method="get">
+    <form id="hours-form">
         <div class="form-group">
             <label for="hours">Hours:</label>
-            <input type="number" class="form-control" id="hours" name="hours" placeholder="Enter number of hours" required>
+            <input type="number" class="form-control" id="hours" name="hours" placeholder="Enter number of hours"
+                   required>
             <button type="submit" class="btn btn-primary">Search</button>
         </div>
-
     </form>
-    <div id="results">
-        <!-- Results or visualizations will be rendered here -->
-        {% if data %}
 
-        {% else %}
-            <p>No articles found.</p>
-        {% endif %}
+    <!-- Display total count, initially hidden -->
+    <div class="mt-3" id="total-articles-container" style="display: none;">
+        <h4 id="total-articles-count">Total Articles: 0</h4>
     </div>
+
+    <!-- Chart container -->
+    <div id="chartdiv"></div>
 </div>
+
+<!-- Styles -->
+<style>
+#chartdiv {
+  width: 100%;
+  height: 500px;
+}
+</style>
+
+<!-- Resources -->
+<script src="https://cdn.amcharts.com/lib/4/core.js"></script>
+<script src="https://cdn.amcharts.com/lib/4/charts.js"></script>
+<script src="https://cdn.amcharts.com/lib/4/themes/animated.js"></script>
+
+<script>
+document.getElementById('hours-form').addEventListener('submit', function(event) {
+    event.preventDefault();  // Prevent the form from reloading the page
+
+    var hours = document.getElementById('hours').value;
+
+    // Fetch data from the API
+    fetch(`/articles_last_x_hours?hours=${hours}&format=json`)
+    .then(response => response.json())
+    .then(data => {
+        // Process data to group articles by the hour they were published
+        const now = new Date();
+        const chartData = [];
+        const groupedArticles = {};
+        let totalArticles = 0;
+
+        // Group articles by hours ago
+        data.forEach(article => {
+            const publishedTime = new Date(article.published_time);
+            const hoursAgo = Math.floor((now - publishedTime) / (1000 * 60 * 60));  // Calculate how many hours ago the article was published
+
+            if (!groupedArticles[hoursAgo]) {
+                groupedArticles[hoursAgo] = 0;
+            }
+            groupedArticles[hoursAgo]++;
+            totalArticles++;  // Count total articles
+        });
+
+        // Convert the grouped data to chart-friendly format
+        for (let i = 0; i <= hours; i++) {
+            chartData.push({
+                hour: `${i} hours ago`,
+                count: groupedArticles[i] || 0  // Count of articles for each hour
+            });
+        }
+
+        // Display the total articles count and make it visible
+        document.getElementById('total-articles-count').innerText = `Total Articles: ${totalArticles}`;
+        document.getElementById('total-articles-container').style.display = 'block';
+
+        // Initialize the chart with the processed data
+        renderBarChart(chartData);
+    })
+    .catch(error => console.error('Error fetching data:', error));
+});
+
+function renderBarChart(chartData) {
+    am4core.ready(function() {
+
+        // Themes begin
+        am4core.useTheme(am4themes_animated);
+        // Themes end
+
+        // Create chart instance
+        var chart = am4core.create("chartdiv", am4charts.XYChart);
+
+        // Add data
+        chart.data = chartData;
+
+        // Add padding to prevent x-axis labels from getting cut off
+        chart.paddingRight = 30;
+        chart.paddingLeft = 30;
+
+        // Create axes
+        var categoryAxis = chart.xAxes.push(new am4charts.CategoryAxis());
+        categoryAxis.dataFields.category = "hour";  // Hours ago as the x-axis
+        categoryAxis.renderer.minGridDistance = 50;
+        categoryAxis.title.text = "Hours Ago";
+        categoryAxis.renderer.labels.template.rotation = 45;  // Rotate labels to avoid overlap
+        categoryAxis.renderer.labels.template.horizontalCenter = "right";
+        categoryAxis.renderer.labels.template.verticalCenter = "middle";
+
+        // Optionally limit the number of labels shown
+        categoryAxis.renderer.minGridDistance = 60;  // Increase grid distance between labels
+
+        var valueAxis = chart.yAxes.push(new am4charts.ValueAxis());
+        valueAxis.renderer.labels.template.disabled = true;  // Remove labels for y-axis
+
+        // Create series
+        var series = chart.series.push(new am4charts.ColumnSeries());
+        series.dataFields.valueY = "count";  // Use the count of articles for the y-axis
+        series.dataFields.categoryX = "hour";  // Hours ago as the x-axis
+        series.tooltipText = "{categoryX}: [bold]{valueY} articles[/]";
+        series.columns.template.strokeOpacity = 0;
+        series.columns.template.fillOpacity = 0.8;
+
+        // Add cursor and scrollbar for better interaction
+        chart.cursor = new am4charts.XYCursor();
+        chart.scrollbarX = new am4core.Scrollbar();
+
+    }); // end am4core.ready()
+}
+</script>
+
 {% endblock %}

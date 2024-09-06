@@ -4,16 +4,109 @@
 
 <div class="container">
     <h2>Articles with Specific Keyword Count</h2>
-    <form action="{{ url_for('articles_with_specific_keyword_count') }}" method="get">
+    <form id="keyword-count-form" action="{{ url_for('articles_with_specific_keyword_count') }}" method="get">
         <div class="form-group">
-            <label for="keyword_count">Keyword Count:</label>
-            <input type="number" class="form-control" id="keyword_count" name="keyword_count" placeholder="Enter keyword count" required>
+            <label for="count">Keyword Count:</label>
+            <input type="number" class="form-control" id="count" name="count" placeholder="Enter keyword count" required>
             <button type="submit" class="btn btn-primary">Search</button>
         </div>
-
     </form>
-    <div id="results">
-        <!-- Results or visualizations will be rendered here -->
-    </div>
+
+    <!-- Div to display the chart -->
+    <div id="chartdiv" style="width: 100%; height: 600px;"></div> <!-- Increased height for better visibility -->
 </div>
+
+<!-- Include amCharts core and chart libraries -->
+<script src="https://cdn.amcharts.com/lib/5/index.js"></script>
+<script src="https://cdn.amcharts.com/lib/5/percent.js"></script>
+<script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
+
+<script>
+document.getElementById('keyword-count-form').addEventListener('submit', function(event) {
+    event.preventDefault();
+
+    // Get the keyword count from the input field
+    const count = document.getElementById('count').value;
+
+    // Fetch data from the Flask API
+    fetch(`http://127.0.0.1:5000/articles_with_specific_keyword_count?count=${count}&format=json`)
+        .then(response => response.json())
+        .then(data => {
+            // Check if data exists
+            if (data.length === 0) {
+                alert('No articles found for the specified keyword count.');
+                return;
+            }
+
+            // Process the data for the chart
+            const chartData = data.map(item => ({
+                title: item.title, // Article title
+                value: 1 // Equal division for each article
+            }));
+
+            // Create the chart
+            am5.ready(function() {
+                // Dispose of previous chart if it exists
+                if (window.chartRoot) {
+                    window.chartRoot.dispose();
+                }
+
+                // Create root element
+                const root = am5.Root.new("chartdiv");
+                window.chartRoot = root;
+
+                // Set themes
+                root.setThemes([am5themes_Animated.new(root)]);
+
+                // Create chart
+                const chart = root.container.children.push(
+                    am5percent.PieChart.new(root, {
+                        startAngle: 160,
+                        endAngle: 380,
+                        layout: root.verticalLayout
+                    })
+                );
+
+                // Create series
+                const series = chart.series.push(
+                    am5percent.PieSeries.new(root, {
+                        valueField: "value",
+                        categoryField: "title", // Use title as the category for tooltip
+                        startAngle: 160,
+                        endAngle: 380,
+                        radius: am5.percent(85), // Increased radius for larger chart
+                        innerRadius: am5.percent(50) // Adjusting for donut chart look
+                    })
+                );
+
+                // Set the tooltip to display the article title on hover
+                series.slices.template.set("tooltipText", "{category}");
+
+                // Hide labels (which were the cause of the clutter)
+                series.labels.template.set("forceHidden", true);
+
+                // Hide ticks connecting slices to labels
+                series.ticks.template.set("forceHidden", true);
+
+                // Add data to the chart
+                series.data.setAll(chartData);
+
+                // Add central label showing total articles
+                chart.seriesContainer.children.push(
+                    am5.Label.new(root, {
+                        textAlign: "center",
+                        centerY: am5.p100,
+                        centerX: am5.p50,
+                        text: `[fontSize:18px]Total Articles:[/]\n[bold fontSize:30px]${chartData.length}[/]`
+                    })
+                );
+            });
+        })
+        .catch(error => {
+            console.error('Error fetching data:', error);
+            alert('Error fetching data. Please try again later.');
+        });
+});
+</script>
+
 {% endblock %}

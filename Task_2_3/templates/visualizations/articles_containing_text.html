@@ -3,20 +3,158 @@
 {% block content %}
 <div class="container">
     <h2>Articles Containing Specific Text</h2>
-    <form action="{{ url_for('articles_containing_text') }}" method="get">
+    <form id="text-form">
         <div class="form-group col-md-6">
             <label for="text" class="col-sm-2 col-form-label">Text:</label>
             <div class="col-sm-10">
                 <input type="text" class="form-control" id="text" name="text" placeholder="Enter text" required>
                 <button type="submit" class="btn btn-primary">Search</button>
             </div>
-
         </div>
-
     </form>
-
-    <div id="results">
-        <!-- Results or visualizations will be rendered here -->
-    </div>
 </div>
+
+<!-- Chart container -->
+<div id="chartdiv"></div>
+
+<!-- Resources -->
+<script src="https://cdn.amcharts.com/lib/5/index.js"></script>
+<script src="https://cdn.amcharts.com/lib/5/xy.js"></script>
+<script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
+
+<!-- Styles -->
+<style>
+#chartdiv {
+  width: 100%;
+  height: 500px;
+}
+</style>
+
+<script>
+document.getElementById('text-form').addEventListener('submit', function(event) {
+    event.preventDefault();  // Prevent form from reloading the page
+    var text = document.getElementById('text').value;
+
+    // Fetch data from the Flask API
+    fetch(`/articles_containing_text?text=${text}&format=json`)
+    .then(response => response.json())
+    .then(data => {
+        if (data.length) {
+            // Prepare data for chart
+            const chartData = [{
+                text: text,  // Use the input text
+                value: data[0].total_articles  // Use the count from the response
+            }];
+
+            updateChart(chartData, text);
+        } else {
+            alert("No data found for the specified text.");
+        }
+    })
+    .catch(error => console.error('Error fetching data:', error));
+});
+
+// Function to update the chart with new data
+function updateChart(chartData, searchText) {
+    am5.ready(function() {
+        // Clear existing chart (if any)
+        am5.registry.rootElements.forEach(function(root) {
+            root.dispose();
+        });
+
+        // Create root element
+        var root = am5.Root.new("chartdiv");
+
+        // Apply themes
+        root.setThemes([
+            am5themes_Animated.new(root)
+        ]);
+
+        // Create chart
+        var chart = root.container.children.push(am5xy.XYChart.new(root, {
+            panX: true,
+            panY: true,
+            wheelX: "panX",
+            wheelY: "zoomX",
+            pinchZoomX: true,
+            paddingLeft: 0,
+            paddingRight: 1
+        }));
+
+        // Add cursor
+        var cursor = chart.set("cursor", am5xy.XYCursor.new(root, {}));
+        cursor.lineY.set("visible", false);
+
+        // Create axes
+        var xRenderer = am5xy.AxisRendererX.new(root, {
+            minGridDistance: 30,
+            minorGridEnabled: true
+        });
+
+        xRenderer.labels.template.setAll({
+            rotation: -90,
+            centerY: am5.p50,
+            centerX: am5.p100,
+            paddingRight: 15
+        });
+
+        xRenderer.grid.template.setAll({
+            location: 1
+        });
+
+        var xAxis = chart.xAxes.push(am5xy.CategoryAxis.new(root, {
+            maxDeviation: 0.3,
+            categoryField: "text",
+            renderer: xRenderer,
+            tooltip: am5.Tooltip.new(root, {})
+        }));
+
+        var yRenderer = am5xy.AxisRendererY.new(root, {
+            strokeOpacity: 0.1
+        });
+
+        var yAxis = chart.yAxes.push(am5xy.ValueAxis.new(root, {
+            maxDeviation: 0.3,
+            renderer: yRenderer
+        }));
+
+        // Create series
+        var series = chart.series.push(am5xy.ColumnSeries.new(root, {
+            name: "Articles",
+            xAxis: xAxis,
+            yAxis: yAxis,
+            valueYField: "value",
+            sequencedInterpolation: true,
+            categoryXField: "text",
+            tooltip: am5.Tooltip.new(root, {
+                labelText: "Number of articles with '{categoryX}' text is {valueY}"
+            })
+        }));
+
+        // Customize columns appearance
+        series.columns.template.setAll({
+            cornerRadiusTL: 5,
+            cornerRadiusTR: 5,
+            strokeOpacity: 0
+        });
+
+        series.columns.template.adapters.add("fill", function (fill, target) {
+            return chart.get("colors").getIndex(series.columns.indexOf(target));
+        });
+
+        series.columns.template.adapters.add("stroke", function (stroke, target) {
+            return chart.get("colors").getIndex(series.columns.indexOf(target));
+        });
+
+        // Set data
+        xAxis.data.setAll(chartData);
+        series.data.setAll(chartData);
+
+        // Animate on load
+        series.appear(1000);
+        chart.appear(1000, 100);
+    });
+}
+</script>
+
 {% endblock %}

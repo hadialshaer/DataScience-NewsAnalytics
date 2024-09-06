@@ -4,16 +4,158 @@
 
 <div class="container">
     <h2>Articles with More than N Words</h2>
-    <form action="{{ url_for('articles_with_more_than') }}" method="get">
+    <form id="word-count-form">
         <div class="form-group col-md-6">
-            <label for="words">Words:</label>
-            <input type="number" class="form-control" id="words" name="words" placeholder="Enter number of words" required>
+            <label for="word_count">Words:</label>
+            <input type="number" class="form-control" id="word_count" name="word_count" placeholder="Enter number of words" required>
             <button type="submit" class="btn btn-primary">Search</button>
         </div>
-
     </form>
-    <div id="results">
-        <!-- Results or visualizations will be rendered here -->
+
+    <!-- Display total count -->
+    <div class="mt-3" id="total-articles-container" style="display: none;">
+        <h4 id="total-articles-count">Total Articles: 0</h4>
     </div>
 </div>
+
+<!-- Chart container -->
+<div id="chartdiv"></div>
+
+<!-- Resources -->
+<script src="https://cdn.amcharts.com/lib/5/index.js"></script>
+<script src="https://cdn.amcharts.com/lib/5/xy.js"></script>
+<script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
+
+<!-- Styles -->
+<style>
+#chartdiv {
+  width: 100%;
+  height: 500px;
+  overflow-x: scroll;  /* Allow horizontal scrolling */
+}
+</style>
+
+<script>
+document.getElementById('word-count-form').addEventListener('submit', function(event) {
+    event.preventDefault();  // Prevent form from reloading the page
+    var word_count = document.getElementById('word_count').value;
+
+    // Fetch data from the Flask API
+    fetch(`/articles_with_more_than?word_count=${word_count}&format=json`)
+    .then(response => response.json())
+    .then(data => {
+        if (data.length) {
+            const chartData = data.map(article => ({
+                title: article.title,
+                word_count: article.word_count,
+                url: article.url
+            }));
+            updateChart(chartData, data.length);
+        } else {
+            alert("No articles found with more than " + word_count + " words.");
+        }
+    })
+    .catch(error => console.error('Error fetching data:', error));
+});
+
+// Function to update the chart with new data
+function updateChart(chartData, totalArticles) {
+    // Display total articles count and update the value
+    document.getElementById('total-articles-container').style.display = 'block';
+    document.getElementById('total-articles-count').innerText = `Total Articles: ${totalArticles}`;
+
+    am5.ready(function() {
+        // Clear existing chart (if any)
+        am5.registry.rootElements.forEach(function(root) {
+            root.dispose();
+        });
+
+        // Create root element
+        var root = am5.Root.new("chartdiv");
+
+        // Apply themes
+        root.setThemes([
+            am5themes_Animated.new(root)
+        ]);
+
+        // Create chart
+        var chart = root.container.children.push(am5xy.XYChart.new(root, {
+            panX: true,
+            panY: false,
+            wheelX: "panX",
+            wheelY: "zoomX",
+            pinchZoomX: true,
+            paddingLeft: 0,
+            paddingRight: 0
+        }));
+
+        // Add cursor
+        var cursor = chart.set("cursor", am5xy.XYCursor.new(root, {}));
+        cursor.lineY.set("visible", false);
+
+        // Create axes
+        var xRenderer = am5xy.AxisRendererX.new(root, {
+            minGridDistance: 30,
+            minorGridEnabled: true
+        });
+
+        // Hide x-axis labels
+        xRenderer.labels.template.setAll({
+            forceHidden: true  // Hide labels on x-axis
+        });
+
+        var xAxis = chart.xAxes.push(am5xy.CategoryAxis.new(root, {
+            maxDeviation: 0.3,
+            categoryField: "title",
+            renderer: xRenderer,
+            tooltip: am5.Tooltip.new(root, {})
+        }));
+
+        var yRenderer = am5xy.AxisRendererY.new(root, {
+            strokeOpacity: 0.1
+        });
+
+        var yAxis = chart.yAxes.push(am5xy.ValueAxis.new(root, {
+            maxDeviation: 0.3,
+            renderer: yRenderer
+        }));
+
+        // Create series
+        var series = chart.series.push(am5xy.ColumnSeries.new(root, {
+            name: "Articles",
+            xAxis: xAxis,
+            yAxis: yAxis,
+            valueYField: "word_count",
+            sequencedInterpolation: true,
+            categoryXField: "title",
+            tooltip: am5.Tooltip.new(root, {
+                labelText: "Title: {categoryX}\nWord Count: {valueY}\nClick to open article"
+            })
+        }));
+
+        // Customize columns appearance
+        series.columns.template.setAll({
+            cornerRadiusTL: 5,
+            cornerRadiusTR: 5,
+            strokeOpacity: 0,
+            width: am5.percent(80)  // Adjust bar width for better fit
+        });
+
+        // Handle click event on bars
+        series.columns.template.events.on("click", function(ev) {
+            var dataItem = ev.target.dataItem.dataContext;
+            window.open(dataItem.url, '_blank');  // Open article in new tab
+        });
+
+        // Set data for chart
+        xAxis.data.setAll(chartData);
+        series.data.setAll(chartData);
+
+        // Make chart animate on load
+        series.appear(1000);
+        chart.appear(1000, 100);
+    });
+}
+</script>
+
 {% endblock %}

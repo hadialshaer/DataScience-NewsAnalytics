@@ -2,28 +2,179 @@
 
 {% block content %}
 
-<h2>Most Updated Articles</h2>
+<div class="container">
+    <h2>Most Updated Articles</h2>
 
+    <!-- Chart container -->
+    <div id="chartdiv"></div>
+</div>
 
+<!-- Styles -->
+<style>
+#chartdiv {
+  width: 100%;
+  height: 500px;
+}
+</style>
 
+<!-- Resources -->
+<script src="https://cdn.amcharts.com/lib/5/index.js"></script>
+<script src="https://cdn.amcharts.com/lib/5/xy.js"></script>
+<script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
 
+<!-- Chart code -->
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    // Fetch data from the Flask API
+    fetch('/most_updated_articles?format=json')
+    .then(response => response.json())
+    .then(data => {
+        // Map the fetched data into a format suitable for the chart
+        const chartData = data.map(item => ({
+            title: item.title,
+            update_count: item.update_count,
+            url: item.url
+        }));
 
+        // Render the chart with the fetched data
+        renderChart(chartData);
+    })
+    .catch(error => console.error('Error fetching data:', error));
+});
 
+function renderChart(chartData) {
+    am5.ready(function() {
 
+        // Create root element
+        var root = am5.Root.new("chartdiv");
 
+        // Set themes
+        root.setThemes([am5themes_Animated.new(root)]);
 
+        // Create chart
+        var chart = root.container.children.push(am5xy.XYChart.new(root, {
+            panX: false,
+            panY: false,
+            wheelX: "none",
+            wheelY: "none",
+            paddingLeft: 0
+        }));
 
+        // Hide the zoom-out button
+        chart.zoomOutButton.set("forceHidden", true);
 
+        // Create Y-axis (categories: titles)
+        var yRenderer = am5xy.AxisRendererY.new(root, {
+            minGridDistance: 30,
+            minorGridEnabled: true
+        });
 
+        var yAxis = chart.yAxes.push(am5xy.CategoryAxis.new(root, {
+            maxDeviation: 0,
+            categoryField: "title",
+            renderer: yRenderer,
+            tooltip: am5.Tooltip.new(root, { themeTags: ["axis"] })
+        }));
 
+        // Create X-axis (update counts)
+        var xAxis = chart.xAxes.push(am5xy.ValueAxis.new(root, {
+            maxDeviation: 0,
+            min: 0,
+            numberFormatter: am5.NumberFormatter.new(root, {
+                "numberFormat": "#,###a"
+            }),
+            extraMax: 0.1,
+            renderer: am5xy.AxisRendererX.new(root, {
+                strokeOpacity: 0.1,
+                minGridDistance: 80
+            })
+        }));
 
+        // Add series (bar chart)
+        var series = chart.series.push(am5xy.ColumnSeries.new(root, {
+            name: "Series 1",
+            xAxis: xAxis,
+            yAxis: yAxis,
+            valueXField: "update_count",
+            categoryYField: "title",
+            tooltip: am5.Tooltip.new(root, {
+                pointerOrientation: "left",
+                labelText: "{valueX} updates"
+            })
+        }));
 
+        // Set rounded corners for the bars
+        series.columns.template.setAll({
+            cornerRadiusTR: 5,
+            cornerRadiusBR: 5,
+            strokeOpacity: 0
+        });
 
+        // Make each column a different color
+        series.columns.template.adapters.add("fill", function (fill, target) {
+            return chart.get("colors").getIndex(series.columns.indexOf(target));
+        });
 
+        series.columns.template.adapters.add("stroke", function (stroke, target) {
+            return chart.get("colors").getIndex(series.columns.indexOf(target));
+        });
 
+        // Set the chart data
+        yAxis.data.setAll(chartData);
+        series.data.setAll(chartData);
 
+        // Enable sorting of the Y-axis based on the value
+        sortCategoryAxis(series, yAxis);
 
+        // Cursor interaction
+        chart.set("cursor", am5xy.XYCursor.new(root, {
+            behavior: "none",
+            xAxis: xAxis,
+            yAxis: yAxis
+        }));
 
+        // Animate the chart on load
+        series.appear(1000);
+        chart.appear(1000, 100);
+    });
+}
 
+// Sort Y-axis based on the value
+function sortCategoryAxis(series, yAxis) {
+    series.dataItems.sort(function (x, y) {
+        return x.get("valueX") - y.get("valueX");
+    });
+
+    am5.array.each(yAxis.dataItems, function (dataItem) {
+        var seriesDataItem = getSeriesItem(dataItem.get("category"), series);
+        if (seriesDataItem) {
+            var index = series.dataItems.indexOf(seriesDataItem);
+            var deltaPosition = (index - dataItem.get("index", 0)) / series.dataItems.length;
+            dataItem.set("index", index);
+            dataItem.set("deltaPosition", -deltaPosition);
+            dataItem.animate({
+                key: "deltaPosition",
+                to: 0,
+                duration: 1000,
+                easing: am5.ease.out(am5.ease.cubic)
+            });
+        }
+    });
+
+    yAxis.dataItems.sort(function (x, y) {
+        return x.get("index") - y.get("index");
+    });
+}
+
+// Helper function to get the series item by category (title)
+function getSeriesItem(category, series) {
+    for (var i = 0; i < series.dataItems.length; i++) {
+        var dataItem = series.dataItems[i];
+        if (dataItem.get("categoryY") === category) {
+            return dataItem;
+        }
+    }
+}
+</script>
 
 {% endblock %}
