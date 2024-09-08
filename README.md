@@ -3,7 +3,7 @@
 [![Python Version](https://img.shields.io/badge/python-3.7%2B-blue)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-A powerful and efficient web scraper designed to extract and analyze articles from the AlMayadeen news website.
+A powerful and efficient Web Scraper that extracts, analyzes, and visualizes data from the AlMayadeen news website. Utilizing advanced data analysis techniques such as sentiment analysis and entity recognition, this application dives deep into textual data to extract meaningful insights.
 <div align="center">
   <a href="https://github.com/hadialshaerr"><strong>View Profile</strong></a>
     <br />
@@ -14,12 +14,11 @@ A powerful and efficient web scraper designed to extract and analyze articles fr
   </p>
 </div>
 
-<strong>Watch the detailed walkthrough of the AlMayadeen News Scraper:</strong>
-
-[![Presentation Video](https://img.youtube.com/vi/HgRxg2Gz0MY/maxresdefault.jpg)](https://youtu.be/HgRxg2Gz0MY)
+![Quick Demo of Data Visualization](Task_2_3/static/images/Visualizations.gif)
 
 ## 📋 Table of Contents
 
+- [Detailed walkthrough videos of the AlMayadeen News Scraper](#detailed-walkthrough-videos-of-the-almayadeen-news-scraper)
 - [Overview](#-overview)
 - [Key Features](#-key-features)
 - [Installation Guide](#-installation-guide)
@@ -32,11 +31,26 @@ A powerful and efficient web scraper designed to extract and analyze articles fr
 - [Author](#-author)
 - [License](#-license)
 
+## Detailed walkthrough videos of the AlMayadeen News Scraper
+
+  - Task_1: Extract articles, gather relevant metadata, and save this information into JSON files organized by month.
+
+[![Presentation Video](https://img.youtube.com/vi/HgRxg2Gz0MY/maxresdefault.jpg)](https://youtu.be/HgRxg2Gz0MY)
+
+  - Task_2: Store Data in MongoDB, and build a simple web service using Flask that allows access and analyze the data through 30 easy-to-use API endpoints.
+
+[![Presentation Video](https://img.youtube.com/vi/VscFSu7S72A/maxresdefault.jpg)](https://youtu.be/VscFSu7S72A)
+
+  - Task_3: Visualize the data using amCharts to create interactive and visually appealing charts that help you more effectively understand the patterns and insights in the data.
+
+[![Presentation Video](https://img.youtube.com/vi/_ZR1FFW3nMU/maxresdefault.jpg)](https://youtu.be/_ZR1FFW3nMU)
+
 ## 🔍 Overview
 
-The AlMayadeen News Scraper is a sophisticated tool that navigates through the AlMayadeen website's sitemap, extracts valuable information from articles, and stores the data into monthly structured JSON files.
-The scraper is designed to handle up to 12,000 articles efficiently.
+The AlMayadeen News Scraper is a full-featured data analysis application that extracts valuable information from articles and visualizes it.
+It uses advanced data analysis techniques like sentiment analysis and entity recognition. 
 This project aims to facilitate data analysis and research on news content from the Middle East.
+It extracts deeper insights from textual data and presents these insights meaningfully.
 
 ## 🚀 Key Features
 
@@ -83,6 +97,12 @@ This project aims to facilitate data analysis and research on news content from 
 
    The scraped data will be stored in the `data_articles/` directory, with each file named according to the year and month (e.g., `articles_2024_08.json`).
 
+2. **Dashboard with visualized endpoints**
+
+   Run the `app.py` script, and open the url that refers to your local server.
+
+2. **Enjoy the show 😉**
+   
 ## Customization
 
 - **Storage Path:** Update the directory path in `FileUtilityClass.py` to change where JSON files are stored.
@@ -108,14 +128,15 @@ DgPad2024-DataScience-WebScraping/
 Our scraper has successfully extracted a wealth of information from the AlMayadeen website. Here are some visual representations of our results:
 
 *Execution process in the terminal*
-![Execution Process](Task-1/Verified_Results_Screenshots/1.png)
+![Execution Process](Task_1/Verified_Results_Screenshots/1.png)
 
 *Total number of articles scraped*
-![Scraping Completion](Task-1/Verified_Results_Screenshots/2.png)
+![Scraping Completion](Task_1/Verified_Results_Screenshots/2.png)
 
 *JSON files generated from the scraped data*
-![Data Output](Task-1/Verified_Results_Screenshots/1.png)
+![Data Output](Task_1/Verified_Results_Screenshots/3.png)
 
+*For a visual representation, refer to the GIF.*
 ## 🛣 Roadmap
 
 - [ ] Implement multi-threading for faster scraping
