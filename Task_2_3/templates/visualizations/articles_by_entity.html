@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <h2>Articles by Entity</h2>
+    <form action="{{ url_for('articles_by_entity') }}" method="get">
+        <div class="form-group col-md-6">
+            <label for="entity">Filter by entity</label>
+            <input type="text" class="form-control" id="entity" name="entity" placeholder="Enter an entity name" required>
+            <button type="submit" class="btn btn-primary">Search</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

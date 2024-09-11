@@ -15,6 +15,81 @@ collection = db['articles']
 def dashboard():
     return render_template('dashboard.html')
 
+# 0. Route for getting articles by entity
+@app.route('/articles_by_entity', methods=['GET'])
+def articles_by_entity():
+    """
+    This route handles a GET request to '/articles_by_entity'. It runs an aggregation pipeline on the 'articles' collection
+    to find and return articles that mention the specified entity (in MISC, LOC, PERS, or ORG fields).
+    """
+    # Get the entity from the query parameters
+    entity = request.args.get('entity','القدس')  # Default to 'القدس' if not provided
+
+    if not entity:
+        return jsonify({"error": "Please provide an entity to search for."}), 400
+
+    # Define the aggregation pipeline
+    pipeline = [
+        # Stage 1: Match articles where the entity is in MISC, LOC, PERS, or ORG fields
+        {
+            "$match": {
+                "$or": [
+                    {"entities.MISC": entity},  # Match in MISC entities
+                    {"entities.LOC": entity},   # Match in LOC entities
+                    {"entities.PERS": entity},  # Match in PERS entities
+                    {"entities.ORG": entity}    # Match in ORG entities
+                ]
+            }
+        },
+        # Stage 2: Project the desired fields
+        {
+            "$project": {
+                "_id": 0,  # Exclude the '_id' field
+                "title": 1,  # Include the article title
+                "url": 1,    # Include the article URL
+                "entities": 1  # Include the entities field
+            }
+        }
+    ]
+
+    # Execute the aggregation pipeline on the collection
+    result = list(collection.aggregate(pipeline))
+
+    # Check if the request is for JSON or HTML
+    if request.args.get('format') == 'json':
+        # Return the result as a JSON response
+        return jsonify(result)
+    else:
+        # Render the result in an HTML template
+        return render_template('visualizations/articles_by_entity.html', data=result)
+
+# 0. Route for getting articles by sentiment
+@app.route('/articles_by_sentiment', methods=['GET'])
+def articles_by_sentiment():
+    """
+    This route handles requests to '/articles_by_sentiment'.
+    It returns articles that match the specified sentiment ('positive', 'negative', 'neutral').
+    """
+    # Set a default sentiment if not provided
+    sentiment = request.args.get('sentiment', 'positive')  # Default to 'positive' if not provided
+
+    if sentiment.lower() not in ['positive', 'negative', 'neutral']:
+        return jsonify({"error": "Invalid sentiment. Choose from positive, negative, or neutral."}), 400
+
+    # Define the aggregation pipeline to fetch articles with the specified sentiment
+    pipeline = [
+        {"$match": {"sentiment": sentiment}},  # Match articles based on sentiment
+        {"$project": {"title": 1, "full_text": 1, "sentiment": 1, "_id": 0}}  # Only include title, full_text, and sentiment
+    ]
+
+    # Execute the aggregation pipeline on the collection
+    result = list(collection.aggregate(pipeline))
+
+    # Return JSON if requested, otherwise render an HTML template
+    if request.args.get('format') == 'json':
+        return jsonify(result)
+    else:
+        return render_template('visualizations/articles_by_sentiment.html', data=result, default_sentiment=sentiment)
 
 # 1. Route for getting top keywords
 @app.route('/top_keywords', methods=['GET'])
@@ -62,7 +137,6 @@ def top_keywords():
     else:
         # Render the result in an HTML template with a chart
         return render_template('visualizations/top_keywords.html', data=result)
-
 
 # 2. Route for getting top authors
 @app.route('/top_authors', methods=['GET'])

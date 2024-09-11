@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <h2>Articles by Sentiment</h2>
+    <form action="{{ url_for('articles_by_sentiment') }}" method="get">
+        <div class="form-group col-md-6">
+            <label for="sentiment">Filter by sentiment</label>
+            <!-- Set the default value in the input field using 'default_sentiment' passed from the backend -->
+            <input type="text" class="form-control" id="sentiment" name="sentiment" placeholder="Enter positive, negative, or neutral" value="{{ default_sentiment }}" required>
+            <button type="submit" class="btn btn-primary">Search</button>
+        </div>
+    </form>
+</div>
+{% endblock %}
