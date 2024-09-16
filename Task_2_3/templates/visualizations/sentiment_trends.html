@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<!-- amCharts Resources -->
+<script src="https://cdn.amcharts.com/lib/5/index.js"></script>
+<script src="https://cdn.amcharts.com/lib/5/xy.js"></script>
+<script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
+
+<h2>Sentiment Trend</h2>
+<!-- Styles -->
+<style>
+    #chartdiv {
+        width: 100%;
+        height: 550px;
+    }
+</style>
+
+<div id="chartdiv"></div>
+
+<!-- JavaScript for fetching data and rendering chart -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Fetch data from Flask API
+        fetch('http://127.0.0.1:5000/sentiment_trends?format=json')
+            .then(response => response.json())
+            .then(data => {
+                // Transform the fetched data into a format amCharts understands
+                const transformedData = transformData(data);
+                // Debug: Log transformed data to ensure correct transformation
+                console.log('Transformed Data:', transformedData);
+                createAmChart(transformedData);
+            })
+            .catch(error => console.error('Error fetching data:', error)); // Handle fetch error
+
+        // Function to transform the API data into amCharts format
+        function transformData(apiData) {
+            // Create a mapping for months
+            const months = {
+                1: "January", 2: "February", 3: "March", 4: "April",
+                5: "May", 6: "June", 7: "July", 8: "August",
+                9: "September", 10: "October", 11: "November", 12: "December"
+            };
+
+            // Prepare the data structure for amCharts
+            const chartData = {};
+
+            // Iterate over each data point from API
+            apiData.forEach(item => {
+                const year = item._id.year;
+                const month = months[item._id.month];
+                const sentiment = Array.isArray(item._id.sentiment) ? item._id.sentiment[0] : item._id.sentiment; // Handle array or string
+                const count = item.count;
+
+                // Continue only if sentiment is valid
+                if (sentiment) {
+                    const key = `${month} ${year}`;
+
+                    // Initialize month if not already present
+                    if (!chartData[key]) {
+                        chartData[key] = { "month": key, "positive": 0, "neutral": 0, "negative": 0 };
+                    }
+
+                    // Assign the count to the correct sentiment
+                    chartData[key][sentiment] = (chartData[key][sentiment] || 0) + count; // Accumulate counts
+                }
+            });
+
+            // Convert chartData object to array
+            return Object.values(chartData);
+        }
+
+        // Function to create the amChart with the transformed data
+        function createAmChart(data) {
+            am5.ready(function() {
+
+                // Create root element
+                var root = am5.Root.new("chartdiv");
+
+                root.setThemes([am5themes_Animated.new(root)]);
+
+                // Create chart
+                var chart = root.container.children.push(am5xy.XYChart.new(root, {
+                    panX: false,
+                    panY: false,
+                    wheelX: "panX",
+                    wheelY: "zoomY",
+                    layout: root.verticalLayout
+                }));
+
+                // Create Y-axis (categories: months and years)
+                var yAxis = chart.yAxes.push(am5xy.CategoryAxis.new(root, {
+                    categoryField: "month",
+                    renderer: am5xy.AxisRendererY.new(root, {}),
+                    tooltip: am5.Tooltip.new(root, {})
+                }));
+                yAxis.data.setAll(data);
+
+                // Create X-axis (counts)
+                var xAxis = chart.xAxes.push(am5xy.ValueAxis.new(root, {
+                    min: 0,
+                    renderer: am5xy.AxisRendererX.new(root, {})
+                }));
+
+                // Function to create stacked series for each sentiment type
+                function createSeries(field, name, color) {
+                    var series = chart.series.push(am5xy.ColumnSeries.new(root, {
+                        name: name,
+                        stacked: true,
+                        xAxis: xAxis,
+                        yAxis: yAxis,
+                        valueXField: field,
+                        categoryYField: "month",
+                        tooltip: am5.Tooltip.new(root, { labelText: "{name}: {valueX}" })
+                    }));
+
+                    series.columns.template.setAll({
+                        width: am5.percent(90),
+                        fill: color,
+                        stroke: color
+                    });
+
+                    series.data.setAll(data);
+
+                    series.bullets.push(function() {
+                        return am5.Bullet.new(root, {
+                            sprite: am5.Label.new(root, {
+                                text: "{valueX}",
+                                fill: root.interfaceColors.get("alternativeText"),
+                                centerY: am5.p50,
+                                centerX: am5.p50,
+                                populateText: true
+                            })
+                        });
+                    });
+                }
+
+                // Create series for "positive", "neutral", and "negative" sentiments
+                createSeries("positive", "Positive", am5.color(0x00FF00));  // Green for positive
+                createSeries("neutral", "Neutral", am5.color(0xFFFF00));   // Yellow for neutral
+                createSeries("negative", "Negative", am5.color(0xFF0000)); // Red for negative
+
+                // Add legend
+                var legend = chart.children.push(am5.Legend.new(root, {
+                    centerX: am5.percent(50),
+                    x: am5.percent(50)
+                }));
+
+                chart.series.each(function(series) {
+                    legend.data.push(series);
+                });
+
+                // Animate chart on load
+                chart.appear(1000, 100);
+
+            }); // end am5.ready()
+        }
+    });
+</script>
+
+{% endblock %}

@@ -1,4 +1,6 @@
 from datetime import datetime  # For handling dates and times
+
+from aiohttp.web_routedef import route
 from flask import Flask, jsonify, render_template, request  # For creating the Flask app and returning JSON responses
 from pymongo import MongoClient  # For connecting to MongoDB
 
@@ -10,12 +12,15 @@ client = MongoClient('mongodb://localhost:27017/')
 db = client['Almayadeen']
 collection = db['articles']
 
+
+
 # Define the routes for the dashboard and the API endpoints
 @app.route('/')
 def dashboard():
     return render_template('dashboard.html')
 
-# 0. Route for getting articles by entity
+# Advanced text analysis routes
+# 1. Route for getting articles by entity
 @app.route('/articles_by_entity', methods=['GET'])
 def articles_by_entity():
     """
@@ -61,9 +66,9 @@ def articles_by_entity():
         return jsonify(result)
     else:
         # Render the result in an HTML template
-        return render_template('visualizations/articles_by_entity.html', data=result)
+        return render_template('visualizations/articles_by_entity.html', data=result, default_entity=entity)
 
-# 0. Route for getting articles by sentiment
+# 2. Route for getting articles by sentiment
 @app.route('/articles_by_sentiment', methods=['GET'])
 def articles_by_sentiment():
     """
@@ -71,7 +76,7 @@ def articles_by_sentiment():
     It returns articles that match the specified sentiment ('positive', 'negative', 'neutral').
     """
     # Set a default sentiment if not provided
-    sentiment = request.args.get('sentiment', 'positive')  # Default to 'positive' if not provided
+    sentiment = request.args.get('sentiment', 'positive').lower()
 
     if sentiment.lower() not in ['positive', 'negative', 'neutral']:
         return jsonify({"error": "Invalid sentiment. Choose from positive, negative, or neutral."}), 400
@@ -91,6 +96,109 @@ def articles_by_sentiment():
     else:
         return render_template('visualizations/articles_by_sentiment.html', data=result, default_sentiment=sentiment)
 
+# 3. Route for getting articles by sentiment trend
+@app.route('/sentiment_trends', methods=['GET'])
+def sentiment_trends():
+    """
+    This route fetches sentiment trends over time, grouped by month and sentiment type.
+    """
+    # Define the pipeline to aggregate sentiment trends by month
+    pipeline = [
+        # Stage 1: Convert the string date (published_time) to a date object
+        {
+            "$addFields": {
+                "published_date": {
+                    "$dateFromString": {
+                        "dateString": "$published_time"
+                    }
+                }
+            }
+        },
+        # Stage 2: Group by month, year, and sentiment (or other fields)
+        {
+            "$group": {
+                "_id": {
+                    "month": {"$month": "$published_date"},
+                    "year": {"$year": "$published_date"},
+                    "sentiment": "$sentiment"
+                },
+                "count": {"$sum": 1}
+            }
+        },
+        # Stage 3: Sort the result by year and month
+        {
+            "$sort": {"_id.year": 1, "_id.month": 1}
+        }
+    ]
+
+    # Run the aggregation on the collection
+    result = list(collection.aggregate(pipeline))
+
+    # Return JSON if requested
+    if request.args.get('format') == 'json':
+        return jsonify(result)
+    else:
+        return render_template('visualizations/sentiment_trends.html', data=result)
+
+# 4. Route for getting keyword trends over time
+@app.route('/keyword_trends', methods=['GET'])
+def keyword_trends():
+    """
+    This route fetches keyword trends over time, grouped by month and keyword.
+    """
+
+    # Get month and year from request arguments
+    month = request.args.get('month', type=int)
+    year = request.args.get('year', type=int)
+
+    # Define the pipeline to aggregate keyword trends
+    pipeline = [
+        { "$unwind": "$keywords" },
+        {
+            "$addFields": {
+                "published_date": {
+                    "$dateFromString": {
+                        "dateString": "$published_time"
+                    }
+                }
+            }
+        },
+        {
+            "$match": {
+                "$expr": {
+                    "$and": [
+                        { "$eq": [{ "$month": "$published_date" }, month] },
+                        { "$eq": [{ "$year": "$published_date" }, year] }
+                    ]
+                }
+            }
+        },
+        {
+            "$group": {
+                "_id": {
+                    "month": { "$month": "$published_date" },
+                    "year": { "$year": "$published_date" },
+                    "keyword": "$keywords"
+                },
+                "count": { "$sum": 1 }
+            }
+        },
+        { "$sort": { "count": -1, "_id.year": 1, "_id.month": 1 } }  # Sort by count descending and then by date
+    ]
+
+    result = list(collection.aggregate(pipeline))
+
+    if request.args.get('format') == 'json':
+        return jsonify(result)
+    else:
+        return render_template('visualizations/keyword_trends.html', data=result)
+
+# TODO: intergrate textblob with camel tools to store sentiment score in the database
+@app.route('/most_positive_articles', methods=['GET'])
+
+
+
+######################################################################################################################
 # 1. Route for getting top keywords
 @app.route('/top_keywords', methods=['GET'])
 def top_keywords():

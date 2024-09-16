@@ -1,15 +1,140 @@
 {% extends "base.html" %}
 
 {% block content %}
+
 <div class="container">
     <h2>Articles by Sentiment</h2>
-    <form action="{{ url_for('articles_by_sentiment') }}" method="get">
+    <form id="searchForm" action="{{ url_for('articles_by_sentiment') }}" method="get">
         <div class="form-group col-md-6">
             <label for="sentiment">Filter by sentiment</label>
-            <!-- Set the default value in the input field using 'default_sentiment' passed from the backend -->
             <input type="text" class="form-control" id="sentiment" name="sentiment" placeholder="Enter positive, negative, or neutral" value="{{ default_sentiment }}" required>
             <button type="submit" class="btn btn-primary">Search</button>
         </div>
     </form>
 </div>
+
+<div class="container">
+    <h3>Total Articles: <span id="totalCount">0</span></h3>
+</div>
+
+<!-- Styles for the chart -->
+<style>
+    #chartdiv {
+        width: 100%;
+        max-width: 100%;
+        height: 550px;
+    }
+</style>
+
+<!-- amCharts Resources -->
+<script src="https://cdn.amcharts.com/lib/5/index.js"></script>
+<script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
+<script src="https://cdn.amcharts.com/lib/5/xy.js"></script>
+
+<!-- Chart code -->
+<script>
+    am5.ready(function() {
+
+        // Create root element for the chart
+        var root = am5.Root.new("chartdiv");
+
+        // Set themes for animations
+        root.setThemes([am5themes_Animated.new(root)]);
+
+        // Create wrapper container for the chart
+        var container = root.container.children.push(am5.Container.new(root, {
+            width: am5.percent(100),
+            height: am5.percent(100),
+            layout: root.verticalLayout
+        }));
+
+        // Function to fetch data based on sentiment dynamically
+        function fetchDataAndRenderChart(sentiment) {
+            fetch(`/articles_by_sentiment?sentiment=${encodeURIComponent(sentiment)}&format=json`)
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('totalCount').textContent = data.length;  // Update total count
+                    var transformedData = transformData(data);
+                    renderChart(transformedData);
+                })
+                .catch(error => console.error("Error fetching data:", error));
+        }
+
+        // Transform the fetched data to the required format for amCharts
+        function transformData(data) {
+            return data.map(item => ({
+                title: item.title,
+                full_text: item.full_text,
+                value: 1  // Each article has a count of 1
+            }));
+        }
+
+        // Render chart with tooltips showing title and full_text
+        function renderChart(data) {
+            container.children.clear();  // Clear any previous chart
+
+            var chart = container.children.push(am5xy.XYChart.new(root, {
+                panX: true,
+                panY: true,
+                wheelX: "panX",
+                wheelY: "zoomX",
+                pinchZoomX: true
+            }));
+
+            // Create X-axis (category axis for article titles)
+            var xAxis = chart.xAxes.push(am5xy.CategoryAxis.new(root, {
+                categoryField: "title",
+                renderer: am5xy.AxisRendererX.new(root, {
+                    minGridDistance: 30
+                })
+            }));
+
+            // Remove X-axis labels (hide them)
+            xAxis.get("renderer").labels.template.set("visible", false);
+
+            // Create Y-axis (value axis for article count)
+            var yAxis = chart.yAxes.push(am5xy.ValueAxis.new(root, {
+                renderer: am5xy.AxisRendererY.new(root, {})
+            }));
+
+            // Create series (column series to visualize article counts)
+            var series = chart.series.push(am5xy.ColumnSeries.new(root, {
+                name: "Articles",
+                xAxis: xAxis,
+                yAxis: yAxis,
+                valueYField: "value",
+                categoryXField: "title",
+                tooltip: am5.Tooltip.new(root, {
+                    labelText: "[bold]{title}" // Tooltip showing title
+                })
+            }));
+
+            // Enable tooltips
+            series.columns.template.set("tooltipText", "[bold]{title}");
+
+            // Bind the data
+            series.data.setAll(data);
+            xAxis.data.setAll(data);
+
+            // Make the chart appear with an animation
+            series.appear(1000);
+            chart.appear(1000, 100);
+        }
+
+        // Handle form submission
+        document.getElementById('searchForm').addEventListener('submit', function(event) {
+            event.preventDefault();  // Prevent the form from submitting normally
+            var sentiment = document.getElementById('sentiment').value;
+            fetchDataAndRenderChart(sentiment);
+        });
+
+        // Load data for the default sentiment on page load
+        fetchDataAndRenderChart("{{ default_sentiment }}");
+
+    });  // end am5.ready()
+</script>
+
+<!-- Chart container -->
+<div id="chartdiv"></div>
+
 {% endblock %}

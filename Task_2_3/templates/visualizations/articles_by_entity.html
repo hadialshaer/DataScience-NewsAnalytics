@@ -3,12 +3,216 @@
 {% block content %}
 <div class="container">
     <h2>Articles by Entity</h2>
-    <form action="{{ url_for('articles_by_entity') }}" method="get">
+    <form id="entityForm" action="{{ url_for('articles_by_entity') }}" method="get">
         <div class="form-group col-md-6">
             <label for="entity">Filter by entity</label>
-            <input type="text" class="form-control" id="entity" name="entity" placeholder="Enter an entity name" required>
+            <input type="text" class="form-control" id="entity" name="entity" placeholder="Enter an entity name" value="{{ default_entity }}" required>
             <button type="submit" class="btn btn-primary">Search</button>
         </div>
     </form>
 </div>
+
+<!-- Chart for Entity Distribution -->
+<div class="container">
+    <h3>Entity Distribution in Articles</h3>
+    <div id="chartdiv" style="width: 100%; height: 500px;"></div>
+    <p class="text-muted">Click on a bar to view the articles related to that entity type.</p> <!-- Hint for the user -->
+</div>
+
+<!-- Modal for showing articles -->
+<div class="modal fade" id="articleModal" tabindex="-1" role="dialog" aria-labelledby="articleModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="articleModalLabel">Articles</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <ul id="modalArticleList"></ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Styles -->
+<style>
+#chartdiv {
+  width: 100%;
+  height: 500px;
+}
+</style>
+
+<!-- AmChart Resources -->
+<script src="https://cdn.amcharts.com/lib/5/index.js"></script>
+<script src="https://cdn.amcharts.com/lib/5/xy.js"></script>
+<script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+<!-- Chart Code -->
+<script>
+am5.ready(function() {
+
+    var root;  // Declare root outside of functions
+
+    // Function to dispose of existing chart instance
+    function disposeChart() {
+        if (root) {
+            root.dispose();  // Properly dispose of any previous chart instances
+        }
+    }
+
+    // Function to fetch data based on user input
+    function fetchData(entity) {
+        fetch(`http://127.0.0.1:5000/articles_by_entity?entity=${encodeURIComponent(entity)}&format=json`)
+            .then(response => response.json())
+            .then(data => {
+                const transformedData = transformData(data); // Transform the fetched data
+                disposeChart();  // Dispose of any previous chart before rendering a new one
+                renderChart(transformedData); // Render the chart with the transformed data
+            })
+            .catch(error => console.error("Error fetching data:", error));
+    }
+
+    // Function to transform the fetched data to match chart format
+    function transformData(data) {
+        let entityCounts = { LOC: 0, MISC: 0, ORG: 0, PERS: 0 };
+        let entityArticles = { LOC: [], MISC: [], ORG: [], PERS: [] };
+
+        // Iterate over each article to count occurrences and track articles containing entities
+        data.forEach(article => {
+            if (article.entities.LOC) {
+                entityCounts.LOC += article.entities.LOC.length;
+                entityArticles.LOC.push(article);
+            }
+
+            if (article.entities.MISC) {
+                entityCounts.MISC += article.entities.MISC.length;
+                entityArticles.MISC.push(article);
+            }
+
+            if (article.entities.ORG) {
+                entityCounts.ORG += article.entities.ORG.length;
+                entityArticles.ORG.push(article);
+            }
+
+            if (article.entities.PERS) {
+                entityCounts.PERS += article.entities.PERS.length;
+                entityArticles.PERS.push(article);
+            }
+        });
+
+        const transformed = [
+            { category: "LOC", count: entityCounts.LOC, articles: entityArticles.LOC },
+            { category: "MISC", count: entityCounts.MISC, articles: entityArticles.MISC },
+            { category: "ORG", count: entityCounts.ORG, articles: entityArticles.ORG },
+            { category: "PERS", count: entityCounts.PERS, articles: entityArticles.PERS }
+        ];
+
+        return transformed;
+    }
+
+    // Create the AmChart
+    function renderChart(data) {
+        // Create root element
+        root = am5.Root.new("chartdiv");
+
+        // Set themes
+        root.setThemes([am5themes_Animated.new(root)]);
+
+        // Create chart
+        var chart = root.container.children.push(am5xy.XYChart.new(root, {
+            panX: false,
+            panY: false,
+            wheelX: "panX",
+            wheelY: "zoomX",
+            layout: root.verticalLayout
+        }));
+
+        // Add X-axis (category axis for entity types)
+        var xAxis = chart.xAxes.push(am5xy.CategoryAxis.new(root, {
+            categoryField: "category",
+            renderer: am5xy.AxisRendererX.new(root, {
+                minGridDistance: 30,
+                labels: {
+                    rotation: -45,
+                    centerY: am5.p50,
+                    centerX: am5.p100
+                }
+            })
+        }));
+
+        // Add Y-axis (value axis for entity counts)
+        var yAxis = chart.yAxes.push(am5xy.ValueAxis.new(root, {
+            min: 0,
+            renderer: am5xy.AxisRendererY.new(root, {})
+        }));
+
+        // Add series (bar series for each entity type)
+        var series = chart.series.push(am5xy.ColumnSeries.new(root, {
+            name: "Entities",
+            xAxis: xAxis,
+            yAxis: yAxis,
+            valueYField: "count",
+            categoryXField: "category",
+            tooltip: am5.Tooltip.new(root, {
+                labelText: "{category}: {valueY} occurrences - Click to view articles"
+            }) // Add hint to tooltip
+        }));
+
+        // Set data to the series and X-axis
+        series.data.setAll(data);
+        xAxis.data.setAll(data);
+
+        // Handle click event on bars
+        series.columns.template.events.on("click", function(ev) {
+            const category = ev.target.dataItem.dataContext.category;
+            const selectedData = data.find(d => d.category === category);
+            showArticlesInModal(selectedData.articles);
+        });
+
+        // Add scrollbar
+        chart.set("scrollbarX", am5.Scrollbar.new(root, { orientation: "horizontal" }));
+
+        // Make the chart animate on load
+        series.appear(1000);
+        chart.appear(1000, 100);
+    }
+
+    // Function to display the list of articles in a modal
+    function showArticlesInModal(articles) {
+        const modalArticleList = document.getElementById('modalArticleList');
+        modalArticleList.innerHTML = ''; // Clear the previous list
+
+        articles.forEach(article => {
+            const listItem = document.createElement('li');
+            const articleLink = document.createElement('a');
+            articleLink.href = article.url;
+            articleLink.textContent = article.title;
+            articleLink.target = "_blank"; // Open in a new tab
+            listItem.appendChild(articleLink);
+            modalArticleList.appendChild(listItem);
+        });
+
+        // Show the modal
+        $('#articleModal').modal('show');
+    }
+
+    // Handle form submission to fetch and display data dynamically
+    document.getElementById('entityForm').addEventListener('submit', function(event) {
+        event.preventDefault(); // Prevent form from submitting the normal way
+        var entity = document.getElementById('entity').value; // Get entity value from input
+        if (entity) {
+            fetchData(entity); // Fetch and display data for the entered entity
+        }
+    });
+
+    // Optionally load default data on page load
+    fetchData("{{ default_entity }}");
+
+}); // end am5.ready()
+</script>
+
 {% endblock %}
