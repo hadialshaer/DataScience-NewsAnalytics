@@ -8425,5 +8425,89 @@ a[data-toggle="collapse"] {
     50% { transform: scale(1.05); }
     100% { transform: scale(1); }
 }
+/* Accordion parent item */
+.accordion-toggle {
+    color: #fff;
+    padding: 10px 20px; /* Adjust padding to match other menu items */
+    display: block;
+    cursor: pointer;
+    position: relative;
+    font-size: 16px; /* Ensure font size matches */
+    font-weight: 500; /* Adjust font weight if necessary */
+}
 
+.accordion-toggle:hover {
+    background-color: #414757; /* Match hover effect with other items */
+    color: #fff;
+}
+
+.accordion-toggle::after {
+    content: '\25BC'; /* Down arrow */
+    position: absolute;
+    right: 20px;
+    transition: transform 0.3s ease;
+}
+
+.accordion-toggle.active::after {
+    transform: rotate(180deg); /* Rotate arrow when active */
+}
+
+/* Submenu */
+.submenu {
+    display: none; /* Hidden by default */
+    padding-left: 0;
+}
+
+.submenu li a {
+    color: #fff;
+    padding: 10px 40px; /* Increase indent for submenu items */
+    display: block;
+    font-size: 14px; /* Slightly smaller font for submenu items */
+}
+
+.submenu li a:hover {
+    background-color: #3a3f48;
+    color: #fff;
+}
+
+/* Search input styling */
+#search-input {
+    border-radius: 20px 0 0 20px;
+    background-color: #f0f8ff;
+    border: 1px solid #007bff;
+}
+
+#search-input:focus {
+    border-color: #0056b3;
+    box-shadow: none;
+}
+
+.input-group .btn {
+    border-radius: 0 20px 20px 0;
+    background-color: #007bff;
+    border-color: #007bff;
+}
+
+.input-group .btn:hover {
+    background-color: #0056b3;
+    border-color: #0056b3;
+}
+
+/* Suggestion box styling */
+.suggestion-box {
+    position: absolute;
+    z-index: 1000;
+    max-height: 200px;
+    overflow-y: auto;
+    background-color: #fff;
+    border: 1px solid #ccc;
+}
+
+.suggestion-box .list-group-item {
+    cursor: pointer;
+}
+
+.suggestion-box .list-group-item:hover {
+    background-color: #f0f0f0;
+}
 

@@ -28,8 +28,8 @@
 
 <!-- amCharts Resources -->
 <script src="https://cdn.amcharts.com/lib/5/index.js"></script>
+<script src="https://cdn.amcharts.com/lib/5/hierarchy.js"></script>
 <script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
-<script src="https://cdn.amcharts.com/lib/5/xy.js"></script>
 
 <!-- Chart code -->
 <script>
@@ -40,13 +40,6 @@
 
         // Set themes for animations
         root.setThemes([am5themes_Animated.new(root)]);
-
-        // Create wrapper container for the chart
-        var container = root.container.children.push(am5.Container.new(root, {
-            width: am5.percent(100),
-            height: am5.percent(100),
-            layout: root.verticalLayout
-        }));
 
         // Function to fetch data based on sentiment dynamically
         function fetchDataAndRenderChart(sentiment) {
@@ -63,65 +56,46 @@
         // Transform the fetched data to the required format for amCharts
         function transformData(data) {
             return data.map(item => ({
-                title: item.title,
-                full_text: item.full_text,
-                value: 1  // Each article has a count of 1
+                name: item.title,
+                value: Math.max(item.sentiment_score * 1000, 50),  // Scale sentiment score for bubble size, minimum size set to 50
+                url: item.url,
+                sentiment_score: item.sentiment_score.toFixed(2) // Limit score to 2 decimal places
             }));
         }
 
-        // Render chart with tooltips showing title and full_text
+        // Render chart with tooltips showing title, sentiment score, and clickable URL
         function renderChart(data) {
-            container.children.clear();  // Clear any previous chart
+            root.container.children.clear();  // Clear any previous chart
 
-            var chart = container.children.push(am5xy.XYChart.new(root, {
-                panX: true,
-                panY: true,
-                wheelX: "panX",
-                wheelY: "zoomX",
-                pinchZoomX: true
+            var series = root.container.children.push(am5hierarchy.Pack.new(root, {
+                maskContent: false, // Important for zoomable containers
+                valueField: "value",
+                categoryField: "name",
+                childDataField: "children",
+                zoomable: true,
+                wheelable: true,
+                pinchZoom: true
             }));
 
-            // Create X-axis (category axis for article titles)
-            var xAxis = chart.xAxes.push(am5xy.CategoryAxis.new(root, {
-                categoryField: "title",
-                renderer: am5xy.AxisRendererX.new(root, {
-                    minGridDistance: 30
-                })
-            }));
+            series.data.setAll([{
+                name: "Root",
+                children: data
+            }]);
 
-            // Remove X-axis labels (hide them)
-            xAxis.get("renderer").labels.template.set("visible", false);
+            // Enable tooltips to only show the title and sentiment score
+            series.nodes.template.set("tooltipText", "[bold]{name}[/]\nSentiment Score: {sentiment_score}");
 
-            // Create Y-axis (value axis for article count)
-            var yAxis = chart.yAxes.push(am5xy.ValueAxis.new(root, {
-                renderer: am5xy.AxisRendererY.new(root, {})
-            }));
+            // Handle clicks to open the URL in a new tab
+            series.nodes.template.events.on("click", function(ev) {
+                var url = ev.target.dataItem.dataContext.url;
+                window.open(url, '_blank'); // Open URL in a new tab
+            });
 
-            // Create series (column series to visualize article counts)
-            var series = chart.series.push(am5xy.ColumnSeries.new(root, {
-                name: "Articles",
-                xAxis: xAxis,
-                yAxis: yAxis,
-                valueYField: "value",
-                categoryXField: "title",
-                tooltip: am5.Tooltip.new(root, {
-                    labelText: "[bold]{title}" // Tooltip showing title
-                })
-            }));
-
-            // Enable tooltips
-            series.columns.template.set("tooltipText", "[bold]{title}");
-
-            // Bind the data
-            series.data.setAll(data);
-            xAxis.data.setAll(data);
-
-            // Make the chart appear with an animation
-            series.appear(1000);
-            chart.appear(1000, 100);
+            // Make bubbles animate on load
+            series.appear(1000, 100);
         }
 
-        // Handle form submission
+        // Handle form submission and update the chart
         document.getElementById('searchForm').addEventListener('submit', function(event) {
             event.preventDefault();  // Prevent the form from submitting normally
             var sentiment = document.getElementById('sentiment').value;

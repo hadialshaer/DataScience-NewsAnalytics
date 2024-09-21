@@ -1,6 +1,4 @@
 from datetime import datetime  # For handling dates and times
-
-from aiohttp.web_routedef import route
 from flask import Flask, jsonify, render_template, request  # For creating the Flask app and returning JSON responses
 from pymongo import MongoClient  # For connecting to MongoDB
 
@@ -11,8 +9,6 @@ app = Flask(__name__)
 client = MongoClient('mongodb://localhost:27017/')
 db = client['Almayadeen']
 collection = db['articles']
-
-
 
 # Define the routes for the dashboard and the API endpoints
 @app.route('/')
@@ -84,7 +80,7 @@ def articles_by_sentiment():
     # Define the aggregation pipeline to fetch articles with the specified sentiment
     pipeline = [
         {"$match": {"sentiment": sentiment}},  # Match articles based on sentiment
-        {"$project": {"title": 1, "full_text": 1, "sentiment": 1, "_id": 0}}  # Only include title, full_text, and sentiment
+        {"$project": {"title": 1, "full_text": 1, "sentiment": 1, "sentiment_score" : 1, "_id": 0}}  # Only include title, full_text, and sentiment
     ]
 
     # Execute the aggregation pipeline on the collection
@@ -147,9 +143,10 @@ def keyword_trends():
     This route fetches keyword trends over time, grouped by month and keyword.
     """
 
-    # Get month and year from request arguments
+    # Get month, year, and keyword from request arguments
     month = request.args.get('month', type=int)
     year = request.args.get('year', type=int)
+    keyword = request.args.get('keyword', None)  # Optional keyword filter
 
     # Define the pipeline to aggregate keyword trends
     pipeline = [
@@ -172,19 +169,30 @@ def keyword_trends():
                     ]
                 }
             }
-        },
-        {
-            "$group": {
-                "_id": {
-                    "month": { "$month": "$published_date" },
-                    "year": { "$year": "$published_date" },
-                    "keyword": "$keywords"
-                },
-                "count": { "$sum": 1 }
-            }
-        },
-        { "$sort": { "count": -1, "_id.year": 1, "_id.month": 1 } }  # Sort by count descending and then by date
+        }
     ]
+
+    # Add keyword filter if provided
+    if keyword:
+        pipeline.append({
+            "$match": {
+                "keywords": keyword
+            }
+        })
+
+    # Group by keyword and count occurrences
+    pipeline.append({
+        "$group": {
+            "_id": {
+                "month": { "$month": "$published_date" },
+                "year": { "$year": "$published_date" },
+                "keyword": "$keywords"
+            },
+            "count": { "$sum": 1 }
+        }
+    })
+
+    pipeline.append({ "$sort": { "count": -1, "_id.year": 1, "_id.month": 1 } })
 
     result = list(collection.aggregate(pipeline))
 
@@ -193,10 +201,79 @@ def keyword_trends():
     else:
         return render_template('visualizations/keyword_trends.html', data=result)
 
-# TODO: intergrate textblob with camel tools to store sentiment score in the database
+
+# 5. Route for getting most positive articles
 @app.route('/most_positive_articles', methods=['GET'])
+def most_positive_articles():
+    """
+    Fetch articles with the highest sentiment scores that are also labeled as positive.
+    """
+    pipeline = [
+        {
+            "$match": {
+                "sentiment": "positive",  # Ensure sentiment label is positive
+                "sentiment_score": {"$exists": True}  # Ensure sentiment_score exists
+            }
+        },
+        {
+            "$sort": {
+                "sentiment_score": -1  # Sort by sentiment score descending
+            }
+        },
+        {
+            "$limit": 10  # Limit to top 10 articles
+        },
+        {
+            "$project": {
+                "_id": 0,
+                "title": 1,
+                "url": 1,
+                "sentiment": 1,  # Include the sentiment field
+                "sentiment_score": 1,  # Include the sentiment score
+                "published_time": 1
+            }
+        }
+    ]
+
+    result = list(collection.aggregate(pipeline))
+
+    if request.args.get('format') == 'json':
+        return jsonify(result)
+    else:
+        return render_template('visualizations/most_positive_articles.html', data=result)
 
 
+# 6. Route for getting most negative articles
+@app.route('/most_negative_articles', methods=['GET'])
+def most_negative_articles():
+    """
+    Fetch articles with the lowest sentiment scores.
+    """
+    pipeline = [
+        {
+            "$match": {
+                "sentiment": "negative",  # Ensure sentiment label is negative
+                "sentiment_score": {"$exists": True}  # Ensure sentiment_score exists
+            }
+        },
+        {"$sort": {"sentiment_score": -1}},
+        {"$limit": 10},  # Limit to top 10 articles
+        {"$project": {
+            "_id": 0,
+                "title": 1,
+                "url": 1,
+                "sentiment": 1,  # Include the sentiment field
+                "sentiment_score": 1,  # Include the sentiment score
+                "published_time": 1
+        }}
+    ]
+
+    result = list(collection.aggregate(pipeline))
+
+    if request.args.get('format') == 'json':
+        return jsonify(result)
+    else:
+        return render_template('visualizations/most_negative_articles.html', data=result)
 
 ######################################################################################################################
 # 1. Route for getting top keywords

@@ -103,37 +103,39 @@
                 }));
 
                 // Function to create stacked series for each sentiment type
-                function createSeries(field, name, color) {
-                    var series = chart.series.push(am5xy.ColumnSeries.new(root, {
-                        name: name,
-                        stacked: true,
-                        xAxis: xAxis,
-                        yAxis: yAxis,
-                        valueXField: field,
-                        categoryYField: "month",
-                        tooltip: am5.Tooltip.new(root, { labelText: "{name}: {valueX}" })
-                    }));
+function createSeries(field, name, color) {
+    var series = chart.series.push(am5xy.ColumnSeries.new(root, {
+        name: name,
+        stacked: true,
+        xAxis: xAxis,
+        yAxis: yAxis,
+        valueXField: field,
+        categoryYField: "month",
+        tooltip: am5.Tooltip.new(root, { labelText: "{name}: {valueX}" })
+    }));
 
-                    series.columns.template.setAll({
-                        width: am5.percent(90),
-                        fill: color,
-                        stroke: color
-                    });
+    series.columns.template.setAll({
+        width: am5.percent(90),
+        fill: color,
+        stroke: color
+    });
 
-                    series.data.setAll(data);
+    series.data.setAll(data);
 
-                    series.bullets.push(function() {
-                        return am5.Bullet.new(root, {
-                            sprite: am5.Label.new(root, {
-                                text: "{valueX}",
-                                fill: root.interfaceColors.get("alternativeText"),
-                                centerY: am5.p50,
-                                centerX: am5.p50,
-                                populateText: true
-                            })
-                        });
-                    });
-                }
+    series.bullets.push(function() {
+        return am5.Bullet.new(root, {
+            sprite: am5.Label.new(root, {
+                text: "{valueX}",
+                fill: am5.color(0x000000), // Change this to a color that contrasts with the bar color
+                centerY: am5.p50,
+                centerX: am5.p50,
+                populateText: true,
+                fontSize: 14, // Adjust the font size as needed
+                fontWeight: "bold" // Make the text bold for better visibility
+            })
+        });
+    });
+}
 
                 // Create series for "positive", "neutral", and "negative" sentiments
                 createSeries("positive", "Positive", am5.color(0x00FF00));  // Green for positive

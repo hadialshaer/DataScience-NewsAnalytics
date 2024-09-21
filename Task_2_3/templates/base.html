@@ -2,12 +2,15 @@
 <html lang="en">
 <head>
     <title>Dashboard</title>
+    <!-- Meta tags and fonts -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 
+    <!-- Google Fonts and Font Awesome -->
     <link href="https://fonts.googleapis.com/css?family=Poppins:300,400,500,600,700,800,900" rel="stylesheet">
-
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+
+    <!-- Custom Stylesheet -->
     <link rel="stylesheet" href="static/css/style.css">
     <style>
         .container {
@@ -40,67 +43,16 @@
         background-color: #0056b3; /* Darker blue on hover */
         border-color: #004085; /* Even darker blue on hover */
         }
-        /* Dropdown toggle (SA, NER, TA) - without the blue background by default */
-        .dropdown-toggle {
-            cursor: pointer;
-            color: #fff;
-            padding: 10px 15px;
-            border-radius: 5px;
-            text-align: left;
-            display: block;
-            background-color: transparent; /* Transparent by default */
-            transition: background-color 0.3s ease; /* Smooth background transition */
-        }
-
-        /* Add a subtle background color on hover */
-        .dropdown-toggle:hover {
-            background-color: #414757; /* Subtle dark hover color */
-            color: #fff;
-        }
-
-        /* Dropdown menu (sub-items) styling */
-        .dropdown-menu {
-            display: none; /* Hidden by default */
-            list-style-type: none;
-            padding-left: 0;
-            background-color: #2c2f33; /* Match background with sidebar */
-            padding: 5px 0; /* Space around items */
-            border-radius: 4px; /* Rounded corners */
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Soft shadow for dropdown */
-            position: absolute; /* Prevent overlapping */
-            z-index: 1;
-            min-width: 100%; /* Ensure it takes full width */
-        }
-
-        /* Display dropdown when active */
-        .dropdown.active .dropdown-menu {
-            display: block;
-        }
-
-        /* Sub-items inside dropdown */
-        .dropdown-menu li a {
-            color: #fff;
-            padding: 10px 15px;
-            text-decoration: none;
-            display: block;
-            transition: background-color 0.3s ease;
-        }
-
-        /* Hover effect for dropdown items */
-        .dropdown-menu li a:hover {
-            background-color: #3a3f48; /* Darker hover effect */
-            color: #fff; /* Ensure text stays white */
-        }
-
     </style>
+
 </head>
 <body>
-
 <div class="wrapper d-flex align-items-stretch">
+
     <nav id="sidebar">
+        <!-- Sidebar Header -->
         <div class="custom-menu">
-            <button type="button" id="sidebarCollapse" class="btn btn-primary">
-            </button>
+            <button type="button" id="sidebarCollapse" class="btn btn-primary"></button>
         </div>
         <div class="img bg-wrap text-center py-4" style="background-color: #32373D;">
             <div class="user-logo img">
@@ -112,18 +64,21 @@
                 </a>
             </div>
         </div>
+        <!-- Sidebar Menu -->
         <ul class="list-unstyled components mb-5">
-            <li class="dropdown">
-                <a class="dropdown-toggle" id="sa-ner-ta"
-                   title="Sentiment Analysis, Named Entity Recognition, and Trend Analysis">
-                    SA, NER, TA
+            <li>
+                <a href="#" class="accordion-toggle">
+                    Advanced Text Analysis
                 </a>
-                <ul class="list-unstyled dropdown-menu">
+                <ul class="list-unstyled submenu">
                     <li><a href="{{ url_for('articles_by_sentiment') }}">Articles by Sentiment</a></li>
                     <li><a href="{{ url_for('articles_by_entity') }}">Articles by Entity</a></li>
                     <li><a href="{{ url_for('sentiment_trends') }}">Sentiment Trends</a></li>
                     <li><a href="{{ url_for('keyword_trends') }}">Keyword Trends</a></li>
+                    <li><a href="{{ url_for('most_positive_articles') }}">Most +ve Articles</a></li>
+                    <li><a href="{{ url_for('most_negative_articles') }}">Most -ve Articles</a></li>
                 </ul>
+            </li>
             <li>
                 <a href=" {{ url_for('top_keywords') }}">Top Keywords</a>
             </li>
@@ -245,38 +200,125 @@
             <li>
                 <a href="{{ url_for('most_updated_articles') }}">Most Updated Articles</a>
             </li>
-
         </ul>
-
     </nav>
 
-    <!-- Page Content  -->
+    <!-- Page Content -->
     <div id="content" class="p-4 p-md-5 pt-5">
+        <!-- Add your search bar here -->
+        <div class="d-flex justify-content-end mb-3">
+            <form class="form-inline">
+                <div class="input-group">
+                    <input id="search-input" type="text" class="form-control" placeholder="Search..."
+                           aria-label="Search">
+                    <div class="input-group-append">
+                        <button class="btn btn-primary" type="submit">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
         {% block content %}{% endblock %}
     </div>
 </div>
 
+<!-- Scripts -->
 <script src="static/js/jquery.min.js"></script>
 <script src="static/js/popper.js"></script>
 <script src="static/js/bootstrap.min.js"></script>
 <script src="static/js/main.js"></script>
+
+<!-- Accordion and Search JavaScript -->
 <script>
-document.addEventListener("DOMContentLoaded", function() {
-    const dropdown = document.getElementById('sa-ner-ta');
+    document.addEventListener("DOMContentLoaded", function() {
+        // Accordion functionality
+        const toggles = document.querySelectorAll('.accordion-toggle');
 
-    dropdown.addEventListener('click', function(e) {
-        e.preventDefault();
-        this.parentElement.classList.toggle('active');  // Toggle the dropdown on click
-    });
+        toggles.forEach(function(toggle) {
+            toggle.addEventListener('click', function(e) {
+                e.preventDefault();
+                const submenu = this.nextElementSibling;
 
-    // Optional: close dropdown if you click outside
-    document.addEventListener('click', function(event) {
-        const dropdownParent = dropdown.parentElement;
-        if (!dropdownParent.contains(event.target)) {
-            dropdownParent.classList.remove('active');  // Close the dropdown if clicked outside
-        }
+                if (submenu && submenu.classList.contains('submenu')) {
+                    // Toggle active class on parent item
+                    this.classList.toggle('active');
+
+                    // Toggle submenu display
+                    submenu.style.display = submenu.style.display === "block" ? "none" : "block";
+                }
+            });
+        });
+
+        // Sidebar search functionality
+        const searchInput = document.getElementById('search-input');
+        const sidebarLinks = document.querySelectorAll('#sidebar ul li a');
+        const sidebarItems = [];
+
+        // Collect sidebar items
+        sidebarLinks.forEach(function(link) {
+            const item = {
+                text: link.textContent.trim(),
+                href: link.getAttribute('href')
+            };
+            sidebarItems.push(item);
+        });
+
+        // Create a dropdown for suggestions
+        const suggestionBox = document.createElement('div');
+        suggestionBox.classList.add('suggestion-box', 'list-group');
+        document.body.appendChild(suggestionBox);
+
+        // Position the suggestion box
+        const positionSuggestionBox = function() {
+            const rect = searchInput.getBoundingClientRect();
+            suggestionBox.style.top = `${rect.bottom + window.scrollY}px`;
+            suggestionBox.style.left = `${rect.left + window.scrollX}px`;
+            suggestionBox.style.width = `${rect.width}px`;
+        };
+
+        // Handle input event
+        searchInput.addEventListener('input', function() {
+            const query = this.value.toLowerCase().trim();
+            suggestionBox.innerHTML = '';
+
+            if (query.length === 0) {
+                suggestionBox.style.display = 'none';
+                return;
+            }
+
+            const matchedItems = sidebarItems.filter(function(item) {
+                return item.text.toLowerCase().includes(query);
+            });
+
+            if (matchedItems.length > 0) {
+                matchedItems.forEach(function(item) {
+                    const suggestionItem = document.createElement('a');
+                    suggestionItem.classList.add('list-group-item', 'list-group-item-action');
+                    suggestionItem.href = item.href;
+                    suggestionItem.textContent = item.text;
+                    suggestionBox.appendChild(suggestionItem);
+                });
+                positionSuggestionBox();
+                suggestionBox.style.display = 'block';
+            } else {
+                // Display 'No results found' message
+                const noResultItem = document.createElement('div');
+                noResultItem.classList.add('list-group-item');
+                noResultItem.textContent = 'No results found';
+                suggestionBox.appendChild(noResultItem);
+                positionSuggestionBox();
+                suggestionBox.style.display = 'block';
+            }
+        });
+
+        // Hide suggestion box when clicking outside
+        document.addEventListener('click', function(event) {
+            if (!searchInput.contains(event.target) && !suggestionBox.contains(event.target)) {
+                suggestionBox.style.display = 'none';
+            }
+        });
     });
-});
 </script>
 </body>
 </html>

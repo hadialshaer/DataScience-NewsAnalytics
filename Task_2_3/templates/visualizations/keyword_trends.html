@@ -8,6 +8,10 @@
     <div id="filterContainer" style="display: flex; justify-content: center; align-items: center; gap: 20px;">
         <form id="filterForm" class="form-inline" style="display: flex; align-items: center; gap: 20px;">
             <div class="form-group" style="display: flex; align-items: center; gap: 10px;">
+                <label for="keyword" style="white-space: nowrap;">Enter Keyword:</label>
+                <input type="text" id="keyword" class="form-control" placeholder="Enter a keyword">
+            </div>
+            <div class="form-group" style="display: flex; align-items: center; gap: 10px;">
                 <label for="month" style="white-space: nowrap;">Select Month:</label>
                 <select id="month" class="form-control">
                     <option value="1">January</option>
@@ -52,103 +56,116 @@
 
 <!-- JavaScript for fetching data and rendering chart -->
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        let root;  // Define root globally to control destruction
+document.addEventListener('DOMContentLoaded', function() {
+    let root;  // Define root globally to control destruction
 
-        // Fetch and render chart for the initial month and year
-        fetchAndRenderChart();
+    // Fetch and render chart for the initial month and year
+    fetchAndRenderChart();
 
-        // Add event listener to the filter form
-        document.getElementById('filterForm').addEventListener('change', function(event) {
-            fetchAndRenderChart();
-        });
-
-        // Function to fetch and render chart based on filters
-        function fetchAndRenderChart() {
-            const month = document.getElementById('month').value;
-            const year = document.getElementById('year').value;
-
-            // Fetch data from the API
-            fetch(`http://127.0.0.1:5000/keyword_trends?month=${month}&year=${year}&format=json`)
-                .then(response => response.json())
-                .then(data => {
-                    // Transform and sort data to get the top 10 keywords
-                    const transformedData = transformData(data);
-                    renderChart(transformedData);
-                })
-                .catch(error => {
-                    console.error('Error fetching data:', error);
-                    renderChart([]);  // Clear the chart if there is an error
-                });
-        }
-
-        // Function to transform the data and get the top 10 keywords
-        function transformData(data) {
-            return data.map(item => ({
-                keyword: item._id.keyword,
-                count: item.count
-            })).sort((a, b) => b.count - a.count).slice(0, 10); // Top 10 keywords
-        }
-
-        // Function to create the chart with filtered data
-        function renderChart(data) {
-            // Destroy existing chart root if it exists
-            if (root) {
-                root.dispose();  // Clean up existing chart
-            }
-
-            am5.ready(function() {
-                // Create root element
-                root = am5.Root.new("chartdiv");
-
-                // Set themes
-                root.setThemes([am5themes_Animated.new(root)]);
-
-                // Create chart
-                var chart = root.container.children.push(am5xy.XYChart.new(root, {
-                    panX: false,
-                    panY: false,
-                    wheelX: "panX",
-                    wheelY: "zoomY",
-                    layout: root.verticalLayout
-                }));
-
-                // Create Y-axis (Keywords)
-                var yAxis = chart.yAxes.push(am5xy.CategoryAxis.new(root, {
-                    categoryField: "keyword",
-                    renderer: am5xy.AxisRendererY.new(root, {}),
-                    tooltip: am5.Tooltip.new(root, {})
-                }));
-                yAxis.data.setAll(data);
-
-                // Create X-axis (Counts)
-                var xAxis = chart.xAxes.push(am5xy.ValueAxis.new(root, {
-                    min: 0,
-                    renderer: am5xy.AxisRendererX.new(root, {})
-                }));
-
-                // Create series
-                var series = chart.series.push(am5xy.ColumnSeries.new(root, {
-                    name: "Count",
-                    xAxis: xAxis,
-                    yAxis: yAxis,
-                    valueXField: "count",
-                    categoryYField: "keyword",
-                    tooltip: am5.Tooltip.new(root, { labelText: "{categoryY}: {valueX}" })
-                }));
-
-                series.columns.template.setAll({
-                    tooltipText: "{categoryY}: {valueX}",
-                    tooltipY: am5.percent(90)
-                });
-
-                series.data.setAll(data);
-
-                // Animate chart on load
-                chart.appear(1000, 100);
-            });
-        }
+    // Add event listener to the filter form for both changes and submit events
+    const form = document.getElementById('filterForm');
+    form.addEventListener('submit', function(event) {
+        event.preventDefault();  // Prevent form submission
+        fetchAndRenderChart();   // Call function to fetch and render chart
     });
+
+    // Also trigger the fetch when month or year is changed
+    form.addEventListener('change', function(event) {
+        fetchAndRenderChart();
+    });
+
+    // Function to fetch and render chart based on filters
+    function fetchAndRenderChart() {
+        const month = document.getElementById('month').value;
+        const year = document.getElementById('year').value;
+        const keyword = document.getElementById('keyword').value; // Get keyword from input
+
+        // Construct the URL based on whether the keyword is provided
+        let url = `http://127.0.0.1:5000/keyword_trends?month=${month}&year=${year}&format=json`;
+        if (keyword) {
+            url += `&keyword=${keyword}`; // Add the keyword filter if provided
+        }
+
+        // Fetch data from the API
+        fetch(url)
+            .then(response => response.json())
+            .then(data => {
+                const transformedData = transformData(data);
+                renderChart(transformedData);
+            })
+            .catch(error => {
+                console.error('Error fetching data:', error);
+                renderChart([]); // Clear the chart if there is an error
+            });
+    }
+
+    // Function to transform the data and get the top 10 keywords
+    function transformData(data) {
+        return data.map(item => ({
+            keyword: item._id.keyword,
+            count: item.count
+        })).sort((a, b) => b.count - a.count).slice(0, 10); // Top 10 keywords
+    }
+
+    // Function to create the chart with filtered data
+    function renderChart(data) {
+        // Destroy existing chart root if it exists
+        if (root) {
+            root.dispose();  // Clean up existing chart
+        }
+
+        am5.ready(function() {
+            // Create root element
+            root = am5.Root.new("chartdiv");
+
+            // Set themes
+            root.setThemes([am5themes_Animated.new(root)]);
+
+            // Create chart
+            var chart = root.container.children.push(am5xy.XYChart.new(root, {
+                panX: false,
+                panY: false,
+                wheelX: "panX",
+                wheelY: "zoomY",
+                layout: root.verticalLayout
+            }));
+
+            // Create Y-axis (Keywords)
+            var yAxis = chart.yAxes.push(am5xy.CategoryAxis.new(root, {
+                categoryField: "keyword",
+                renderer: am5xy.AxisRendererY.new(root, {}),
+                tooltip: am5.Tooltip.new(root, {})
+            }));
+            yAxis.data.setAll(data);
+
+            // Create X-axis (Counts)
+            var xAxis = chart.xAxes.push(am5xy.ValueAxis.new(root, {
+                min: 0,
+                renderer: am5xy.AxisRendererX.new(root, {})
+            }));
+
+            // Create series
+            var series = chart.series.push(am5xy.ColumnSeries.new(root, {
+                name: "Count",
+                xAxis: xAxis,
+                yAxis: yAxis,
+                valueXField: "count",
+                categoryYField: "keyword",
+                tooltip: am5.Tooltip.new(root, { labelText: "{categoryY}: {valueX}" })
+            }));
+
+            series.columns.template.setAll({
+                tooltipText: "{categoryY}: {valueX}",
+                tooltipY: am5.percent(90)
+            });
+
+            series.data.setAll(data);
+
+            // Animate chart on load
+            chart.appear(1000, 100);
+        });
+    }
+});
 </script>
 
 {% endblock %}
