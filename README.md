@@ -1,24 +1,25 @@
-# 🌐 AlMayadeen News Scraper
+# 🌐 Interactive News Analytics Dashboard
 
 [![Python Version](https://img.shields.io/badge/python-3.7%2B-blue)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 A powerful and efficient Web Scraper that extracts, analyzes, and visualizes data from the AlMayadeen news website. Utilizing advanced data analysis techniques such as sentiment analysis and entity recognition, this application dives deep into textual data to extract meaningful insights.
 <div align="center">
-  <a href="https://github.com/hadialshaerr"><strong>View Profile</strong></a>
+  <a href="https://github.com/hadialshaer"><strong>View Profile</strong></a>
     <br />
     <br />
-    <a href="https://github.com/hadialshaerr/DgPad2024-DataScience-WebScraping/issues/new?labels=bug&template=bug_report.md">Report Bug</a>
+    <a href="https://github.com/hadialshaer/DataScience-NewsAnalytics/issues/new?labels=bug&template=bug_report.md">Report Bug</a>
     ·
-    <a href="https://github.com/hadialshaerr/DgPad2024-DataScience-WebScraping/issues/new?labels=enhancement&template=feature_request.md">Request Feature</a>
+    <a href="https://github.com/hadialshaer/DataScience-NewsAnalytics/issues/new?labels=enhancement&template=feature_request.md">Request Feature</a>
   </p>
 </div>
 
-![Quick Demo of Data Visualization](Task_2_3/static/images/Visualizations.gif)
+![Quick Demo of Data Visualization](data_visualization/static/images/Visualizations.gif)
 
 ## 📋 Table of Contents
 
-- [Detailed walkthrough videos of the AlMayadeen News Scraper](#detailed-walkthrough-videos-of-the-almayadeen-news-scraper)
+- [Demo Video](#demo-video)
+- [Detailed walkthrough videos of the News Analytics Dashboard](#detailed-walkthrough-videos-of-the-news-analytics-dashboard)
 - [Overview](#-overview)
 - [Key Features](#-key-features)
 - [Installation Guide](#-installation-guide)
@@ -31,41 +32,53 @@ A powerful and efficient Web Scraper that extracts, analyzes, and visualizes dat
 - [Author](#-author)
 - [License](#-license)
 
-## Detailed walkthrough videos of the AlMayadeen News Scraper
+## Demo Video
+[![Presentation Video](https://img.youtube.com/vi//maxresdefault.jpg)]()
 
-  - Task_1: Extract articles, gather relevant metadata, and save this information into JSON files organized by month.
+## Detailed walkthrough videos of the News Analytics Dashboard
+
+  - Weak_1: Extract articles, gather relevant metadata, and save this information into JSON files organized by month.
 
 [![Presentation Video](https://img.youtube.com/vi/HgRxg2Gz0MY/maxresdefault.jpg)](https://youtu.be/HgRxg2Gz0MY)
 
-  - Task_2: Store Data in MongoDB, and build a simple web service using Flask that allows access and analyze the data through 30 easy-to-use API endpoints.
+  - Weak_2: Store Data in MongoDB, and build a simple web service using Flask that allows access and analyze the data through 30 easy-to-use API endpoints.
 
 [![Presentation Video](https://img.youtube.com/vi/VscFSu7S72A/maxresdefault.jpg)](https://youtu.be/VscFSu7S72A)
 
-  - Task_3: Visualize the data using amCharts to create interactive and visually appealing charts that help you more effectively understand the patterns and insights in the data.
+  - Weak_3: Visualize the data using amCharts to create interactive and visually appealing charts that help you more effectively understand the patterns and insights in the data.
 
 [![Presentation Video](https://img.youtube.com/vi/_ZR1FFW3nMU/maxresdefault.jpg)](https://youtu.be/_ZR1FFW3nMU)
 
+  - Weak_4: Perform sentiment analysis and entity recognition using NLP libraries like CAMel Tools and AraBERT, providing deeper ‎insights into content‎
+
+[![Presentation Video](https://img.youtube.com/vi//maxresdefault.jpg)]()
+
 ## 🔍 Overview
 
-The AlMayadeen News Scraper is a full-featured data analysis application that extracts valuable information from articles and visualizes it.
-It uses advanced data analysis techniques like sentiment analysis and entity recognition. 
-This project aims to facilitate data analysis and research on news content from the Middle East.
+The Al Mayadeen News Analytics is a full-featured data analysis application that extracts valuable information from articles and visualizes it.<br>
+It uses advanced data analysis techniques like sentiment analysis and entity recognition.<br>
+This project aims to facilitate data analysis and research on news content from the Middle East.<br>
 It extracts deeper insights from textual data and presents these insights meaningfully.
 
 ## 🚀 Key Features
 
-- **Intelligent Sitemap Parsing**: Efficiently extracts article URLs from monthly sitemaps
-- **Comprehensive Article Scraping**: Captures metadata, full text, and associated media information
-- **Structured Data Storage**: Organizes scraped data into year-month based JSON files
-- **Robust Error Handling**: Ensures smooth operation even when encountering network issues or unexpected page structures
-- **Configurable Limits**: Allows easy adjustment of scraping boundaries to suit different needs
+- **Intelligent Sitemap Parsing**: Efficiently extracts article URLs from monthly sitemaps, ensuring comprehensive data collection from various sources.
+- **Comprehensive Article Scraping**: Utilizes BeautifulSoup to capture metadata, full text, and associated media information, organizing articles effectively for analysis.
+- **Structured Data Storage**: Leverages PyMongo and MongoDB to store large datasets in year-month based JSON files, optimizing for efficient retrieval and querying.
+- **Flask API with Multiple Endpoints**: Provides a Flask-based API with several endpoints to access, aggregate, and analyze the scraped data in real time.
+- **Interactive Data Visualization**: Integrates amCharts to create dynamic, interactive charts that visualize data trends and patterns for insightful analysis.
+- **Advanced Sentiment & Entity Analysis**: Performs sentiment analysis and entity recognition using NLP tools like CAMel Tools and AraBERT, generating deeper insights into the content.
+- **Responsive Interactive Dashboard**: Combines all visualizations and analytics into a responsive dashboard, providing a user-friendly interface for interacting with the data.
+- **Robust Error Handling**: Ensures smooth operation even when encountering network issues or unexpected page structures, preventing disruptions in the scraping process.
+- **Configurable Scraping Limits**: Allows easy adjustment of scraping boundaries, enabling flexible data collection according to different project needs.
+- **Enhanced Security**: Implements API authentication to safeguard data access, ensuring that only authorized users can interact with the collected information.
 
 ## 🔧 Installation Guide
 
 1. Clone the repository:
    ```
-   git clone https://github.com/hadialshaerr/DgPad-DataScience-WebScraping.git
-   cd DgPad-DataScience-WebScraping
+   git clone https://github.com/hadialshaer/DataScience-NewsAnalytics.git
+   cd DataScience-NewsAnalytics
    ```
 
 2. Set up a virtual environment (optional but recommended):
@@ -78,9 +91,15 @@ It extracts deeper insights from textual data and presents these insights meanin
    ```
    pip install -r requirements.txt
    ```
-   or using pip:
+4. Install the necessary tools and datasets for working with sentiment analysis and entity recognition on Arabic text:
    ```
-   pip install requests beautifulsoup4 lxml
+   pip install camel_tools
+   ```
+   ```
+   camel_data -i sentiment-analysis-all
+   ```
+   ```
+   camel_data -i ner-all
    ```
 
 ## 🚀 Usage
@@ -90,12 +109,11 @@ It extracts deeper insights from textual data and presents these insights meanin
    ```
    python web_scraper_main.py
    ```
-
    This will start the process of parsing the sitemap, scraping articles, and saving the data into JSON files.
 
 2. **Output:**
 
-   The scraped data will be stored in the `data_articles/` directory, with each file named according to the year and month (e.g., `articles_2024_08.json`).
+   The scraped data will be stored in the `data_articles/`, with each file named according to the year and month (e.g., `articles_2024_08.json`).
 
 2. **Dashboard with visualized endpoints**
 
@@ -111,40 +129,42 @@ It extracts deeper insights from textual data and presents these insights meanin
 ## 📁 Project Structure
 
 ```
-DgPad2024-DataScience-WebScraping/
+InteractiveNewsAnalyticsDashboard/
 │
-├── data_articles             # Folder that contains JSON files
-├── Article.py                # Article data structure definition
-├── ArticleScraperClass.py    # Article scraping logic
-├── FileUtilityClass.py       # Data saving utilities
-├── requirements.txt          # Project dependencies
-├── SiteParserClass.py        # Sitemap parsing functionality
-├── web_scraper_main.py       # Main execution script
-└── README.md                 # Project documentation
+├── data_ai_intelligence/
+├── data_collection/
+├── data_storage_analysis/
+├── data_visualization/     
+├── app.py
+├── requirements.txt
 ```
 
 ## 📊 Results
 
-Our scraper has successfully extracted a wealth of information from the AlMayadeen website. Here are some visual representations of our results:
-
 *Execution process in the terminal*
-![Execution Process](Task_1/Verified_Results_Screenshots/1.png)
+![Execution Process](Data_Collection/result_screenshots/1.png)
 
 *Total number of articles scraped*
-![Scraping Completion](Task_1/Verified_Results_Screenshots/2.png)
+![Scraping Completion](Data_Collection/result_screenshots/2.png)
 
 *JSON files generated from the scraped data*
-![Data Output](Task_1/Verified_Results_Screenshots/3.png)
+![Data Output](Data_Collection/result_screenshots/3.png)
 
-*For a visual representation, refer to the GIF.*
+*Results in MongoDb*
+![Data Output](data_storage_analysis/MongoDB_database_screenshot/1.png)
+
+*Visual Representation*<br>
+Refer to the GIF at the top, or click here to view: <a href="https://github.com/hadialshaer/DataScience-NewsAnalytics/data_visualization/visualization_screenshots"><strong>View visualizations</strong></a>
 ## 🛣 Roadmap
 
+- [ ] Deploy to cloud platform (e.g., AWS, Heroku, Azure, or Render)
+- [ ] Integrate real-time data scraping and analysis
 - [ ] Implement multi-threading for faster scraping
-- [ ] Add support for older archive pages
-- [ ] Develop a user interface for easy configuration
-- [ ] Integrate with a database for more efficient storage
-- [ ] Implement advanced text analysis features
-- [ ] ... ... more coming soon
+- [ ] Optimize data storage with advanced indexing in MongoDB for faster queries
+- [ ] Implement notifications or alerts for breaking news or trending topics
+- [ ] Add a scheduling system for automated, periodic scraping
+- [ ] ... more coming soon
+
 
 ## 🤝 Contributing
 
@@ -162,7 +182,7 @@ Don't forget to give the project a star! Thanks again!
 
 **Hadi Al-Shaer**
 
-- GitHub: [@hadialshaerr](https://github.com/hadialshaerr)
+- GitHub: [@hadialshaer](https://github.com/hadialshaer)
 - reach me: hadialshaerrr@gmail.com
 
 ## 📄 License
