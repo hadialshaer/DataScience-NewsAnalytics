@@ -5,13 +5,15 @@
     <!-- Meta tags and fonts -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description"
+          content="Dashboard for Almayadeen Scraper with advanced text analysis and search functionalities.">
 
     <!-- Google Fonts and Font Awesome -->
     <link href="https://fonts.googleapis.com/css?family=Poppins:300,400,500,600,700,800,900" rel="stylesheet">
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
 
     <!-- Custom Stylesheet -->
-    <link rel="stylesheet" href="static/css/style.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <style>
         .container {
         margin-top: 20px;
@@ -71,133 +73,114 @@
                     Advanced Text Analysis
                 </a>
                 <ul class="list-unstyled submenu">
-                    <li><a href="{{ url_for('articles_by_sentiment') }}">Articles by Sentiment</a></li>
-                    <li><a href="{{ url_for('articles_by_entity') }}">Articles by Entity</a></li>
-                    <li><a href="{{ url_for('sentiment_trends') }}">Sentiment Trends</a></li>
-                    <li><a href="{{ url_for('keyword_trends') }}">Keyword Trends</a></li>
-                    <li><a href="{{ url_for('most_positive_articles') }}">Most +ve Articles</a></li>
-                    <li><a href="{{ url_for('most_negative_articles') }}">Most -ve Articles</a></li>
+                    <li class="{% if request.endpoint == 'articles_by_sentiment' %}active{% endif %}">
+                        <a href="{{ url_for('articles_by_sentiment') }}">Articles by Sentiment</a>
+                    </li>
+                    <li class="{% if request.endpoint == 'articles_by_entity' %}active{% endif %}">
+                        <a href="{{ url_for('articles_by_entity') }}">Articles by Entity</a>
+                    </li>
+                    <li class="{% if request.endpoint == 'sentiment_trends' %}active{% endif %}">
+                        <a href="{{ url_for('sentiment_trends') }}">Sentiment Trends</a>
+                    </li>
+                    <li class="{% if request.endpoint == 'keyword_trends' %}active{% endif %}">
+                        <a href="{{ url_for('keyword_trends') }}">Keyword Trends</a>
+                    </li>
+                    <li class="{% if request.endpoint == 'most_positive_articles' %}active{% endif %}">
+                        <a href="{{ url_for('most_positive_articles') }}">Most +ve Articles</a>
+                    </li>
+                    <li class="{% if request.endpoint == 'most_negative_articles' %}active{% endif %}">
+                        <a href="{{ url_for('most_negative_articles') }}">Most -ve Articles</a>
+                    </li>
                 </ul>
             </li>
-            <li>
-                <a href=" {{ url_for('top_keywords') }}">Top Keywords</a>
+            <li class="{% if request.endpoint == 'top_keywords' %}active{% endif %}">
+                <a href="{{ url_for('top_keywords') }}">Top Keywords</a>
             </li>
-
-            <li>
+            <li class="{% if request.endpoint == 'top_authors' %}active{% endif %}">
                 <a href="{{ url_for('top_authors') }}">Top Authors</a>
             </li>
-
-            <li>
+            <li class="{% if request.endpoint == 'articles_by_date' %}active{% endif %}">
                 <a href="{{ url_for('articles_by_date') }}">Articles by Date</a>
             </li>
-
-            <li>
+            <li class="{% if request.endpoint == 'articles_by_word_count' %}active{% endif %}">
                 <a href="{{ url_for('articles_by_word_count') }}">Articles by Word Count</a>
             </li>
-
-            <li>
+            <li class="{% if request.endpoint == 'articles_by_language' %}active{% endif %}">
                 <a href="{{ url_for('articles_by_language') }}">Articles by Language</a>
             </li>
-
-            <li>
+            <li class="{% if request.endpoint == 'articles_by_classes' %}active{% endif %}">
                 <a href="{{ url_for('articles_by_classes') }}">Articles by Category</a>
             </li>
-
-            <li>
+            <li class="{% if request.endpoint == 'recent_articles' %}active{% endif %}">
                 <a href="{{ url_for('recent_articles') }}">Recent Articles</a>
             </li>
-
-            <li>
+            <li class="{% if request.endpoint == 'articles_by_keyword' %}active{% endif %}">
                 <a href="{{ url_for('articles_by_keyword') }}">Articles by Keyword</a>
             </li>
-
-            <li>
+            <li class="{% if request.endpoint == 'articles_by_author' %}active{% endif %}">
                 <a href="{{ url_for('articles_by_author') }}">Articles by Author</a>
             </li>
-
-            <li>
+            <li class="{% if request.endpoint == 'top_classes' %}active{% endif %}">
                 <a href="{{ url_for('top_classes') }}">Top Classes</a>
             </li>
-
-            <li>
+            <li class="{% if request.endpoint == 'article_details' %}active{% endif %}">
                 <a href="{{ url_for('article_details') }}">Article Details</a>
             </li>
-
-            <li>
+            <li class="{% if request.endpoint == 'articles_with_video' %}active{% endif %}">
                 <a href="{{ url_for('articles_with_video') }}">Articles Containing Video</a>
             </li>
-            <li>
+            <li class="{% if request.endpoint == 'articles_by_year' %}active{% endif %}">
                 <a href="{{ url_for('articles_by_year') }}">Articles by Publication Year</a>
             </li>
-
-            <li>
+            <li class="{% if request.endpoint == 'longest_articles' %}active{% endif %}">
                 <a href="{{ url_for('longest_articles') }}">Longest Articles</a>
             </li>
-
-            <li>
+            <li class="{% if request.endpoint == 'shortest_articles' %}active{% endif %}">
                 <a href="{{ url_for('shortest_articles') }}">Shortest Articles</a>
             </li>
-
-            <li>
+            <li class="{% if request.endpoint == 'articles_by_keyword_count' %}active{% endif %}">
                 <a href="{{ url_for('articles_by_keyword_count') }}">Articles by Keyword Count</a>
             </li>
-
-            <li>
+            <li class="{% if request.endpoint == 'articles_with_thumbnail' %}active{% endif %}">
                 <a href="{{ url_for('articles_with_thumbnail') }}">Articles by Thumbnail Presence</a>
             </li>
-
-            <li>
-                <a href="{{ url_for('articles_updated_after_publication') }}">Articles Updated After
-                    Publication</a>
+            <li class="{% if request.endpoint == 'articles_updated_after_publication' %}active{% endif %}">
+                <a href="{{ url_for('articles_updated_after_publication') }}">Articles Updated After Publication</a>
             </li>
-
-            <li>
+            <li class="{% if request.endpoint == 'articles_by_coverage' %}active{% endif %}">
                 <a href="{{ url_for('articles_by_coverage') }}">Articles by Coverage</a>
             </li>
-
-            <li>
-                <a href="{{ url_for('popular_keywords_last_x_days') }}">Most Popular Keywords in the Last X
-                    Days</a>
+            <li class="{% if request.endpoint == 'popular_keywords_last_x_days' %}active{% endif %}">
+                <a href="{{ url_for('popular_keywords_last_x_days') }}">Most Popular Keywords in the Last X Days</a>
             </li>
-
-            <li>
+            <li class="{% if request.endpoint == 'articles_by_month' %}active{% endif %}">
                 <a href="{{ url_for('articles_by_month') }}">Articles by Published Month</a>
             </li>
-
-            <li>
+            <li class="{% if request.endpoint == 'articles_by_word_count_range' %}active{% endif %}">
                 <a href="{{ url_for('articles_by_word_count_range') }}">Articles by Word Count Range</a>
             </li>
-
-            <li>
-                <a href="{{ url_for('articles_with_specific_keyword_count') }}">Articles with Specific Keyword
-                    Count</a>
+            <li class="{% if request.endpoint == 'articles_with_specific_keyword_count' %}active{% endif %}">
+                <a href="{{ url_for('articles_with_specific_keyword_count') }}">Articles with Specific Keyword Count</a>
             </li>
-
-            <li>
+            <li class="{% if request.endpoint == 'articles_by_specific_date' %}active{% endif %}">
                 <a href="{{ url_for('articles_by_specific_date') }}">Articles by Specific Date</a>
             </li>
-
-            <li>
+            <li class="{% if request.endpoint == 'articles_containing_text' %}active{% endif %}">
                 <a href="{{ url_for('articles_containing_text') }}">Articles Containing Specific Text</a>
             </li>
-
-            <li>
+            <li class="{% if request.endpoint == 'articles_with_more_than' %}active{% endif %}">
                 <a href="{{ url_for('articles_with_more_than') }}">Articles with More than N Words</a>
             </li>
-
-            <li>
+            <li class="{% if request.endpoint == 'articles_grouped_by_coverage' %}active{% endif %}">
                 <a href="{{ url_for('articles_grouped_by_coverage') }}">Articles Grouped by Coverage</a>
             </li>
-
-            <li>
+            <li class="{% if request.endpoint == 'articles_last_x_hours' %}active{% endif %}">
                 <a href="{{ url_for('articles_last_x_hours') }}">Articles Published in Last X Hours</a>
             </li>
-
-            <li>
+            <li class="{% if request.endpoint == 'articles_by_title_length' %}active{% endif %}">
                 <a href="{{ url_for('articles_by_title_length') }}">Articles by Length of Title</a>
             </li>
-
-            <li>
+            <li class="{% if request.endpoint == 'most_updated_articles' %}active{% endif %}">
                 <a href="{{ url_for('most_updated_articles') }}">Most Updated Articles</a>
             </li>
         </ul>
@@ -224,10 +207,10 @@
 </div>
 
 <!-- Scripts -->
-<script src="static/js/jquery.min.js"></script>
-<script src="static/js/popper.js"></script>
-<script src="static/js/bootstrap.min.js"></script>
-<script src="static/js/main.js"></script>
+<script src="{{ url_for('static', filename='js/jquery.min.js') }}"></script>
+<script src="{{ url_for('static', filename='js/popper.js') }}"></script>
+<script src="{{ url_for('static', filename='js/bootstrap.min.js') }}"></script>
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
 
 <!-- Accordion and Search JavaScript -->
 <script>

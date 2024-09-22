@@ -3,7 +3,7 @@ from flask import Flask, jsonify, render_template, request  # For creating the F
 from pymongo import MongoClient  # For connecting to MongoDB
 
 # Initialize Flask app
-app = Flask(__name__)
+app = Flask(__name__, template_folder='data_visualization/templates', static_folder='data_visualization/static')
 
 # Initialize MongoDB client and specify the database and collection
 client = MongoClient('mongodb://localhost:27017/')
