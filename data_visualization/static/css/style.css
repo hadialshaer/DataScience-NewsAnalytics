@@ -8510,4 +8510,9 @@ a[data-toggle="collapse"] {
 .suggestion-box .list-group-item:hover {
     background-color: #f0f0f0;
 }
-
+li.active a {
+    background-color: #007bff; /* Highlight with blue background */
+    color: white; /* White text color */
+    font-weight: bold; /* Bold text */
+    border-radius: 4px; /* Optional: add rounded corners */
+}
