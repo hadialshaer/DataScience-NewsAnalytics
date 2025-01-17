@@ -1,7 +1,6 @@
 # 🌐 Interactive News Analytics Dashboard
 
 [![Python Version](https://img.shields.io/badge/python-3.7%2B-blue)](https://www.python.org/downloads/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 A powerful and efficient Web Scraper that extracts, analyzes, and visualizes data from the AlMayadeen news website. Utilizing advanced data analysis techniques such as sentiment analysis and entity recognition, this application dives deep into textual data to extract meaningful insights.
 <div align="center">
@@ -30,7 +29,6 @@ A powerful and efficient Web Scraper that extracts, analyzes, and visualizes dat
 - [Roadmap](#-roadmap)
 - [Contributing](#-contributing)
 - [Author](#-author)
-- [License](#-license)
 
 ## Demo Video
 [![Presentation Video](https://img.youtube.com/vi//maxresdefault.jpg)]()
@@ -183,12 +181,7 @@ Don't forget to give the project a star! Thanks again!
 **Hadi Al-Shaer**
 
 - GitHub: [@hadialshaer](https://github.com/hadialshaer)
-- reach me: hadialshaerrr@gmail.com
-
-## 📄 License
-
-This project is open source and available under the [MIT License](LICENSE).
-
+- reach me: hadialshaer.dev@gmail.com
 ---
 
 ⚠️ **Disclaimer**: This scraper is intended for educational and research purposes only. Always respect the website's robots.txt file and terms of service when scraping content.
